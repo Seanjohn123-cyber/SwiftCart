@@ -1,0 +1,562 @@
+[
+  {
+    "id": "PROD-EXT-1791825783735-1",
+    "name": "Alpine Pro Titanium Thermal Bottle",
+    "category": "fitness",
+    "price": 44.5,
+    "originalPrice": 65,
+    "size": "750ml",
+    "color": "Brushed Titanium",
+    "rating": 4.7,
+    "reviewsCount": 325,
+    "sku": "SKU-EXT-ART2NH",
+    "inStock": true,
+    "store": "Alpine Outdoor Labs",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Ultralight grade 1 titanium with vacuum wall insulation and paracord sling.",
+    "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Alpine Outdoor Labs",
+        "price": 44.5,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 51.18,
+        "shipping": "$4.99 Ground",
+        "status": "+$6.67",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825783735-2",
+    "name": "Vibram MegaGrip Trail Stride Shoes",
+    "category": "shoes",
+    "price": 84.99,
+    "originalPrice": 120,
+    "size": "Size 10",
+    "color": "Olive & Amber",
+    "rating": 4.7,
+    "reviewsCount": 812,
+    "sku": "SKU-EXT-BFO2HX",
+    "inStock": true,
+    "store": "Alpine Outdoor Labs",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Aggressive 5mm multi-directional lugs with rock shield puncture protection.",
+    "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Alpine Outdoor Labs",
+        "price": 84.99,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 97.74,
+        "shipping": "$4.99 Ground",
+        "status": "+$12.75",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825781652-1",
+    "name": "Urban Minimalist Waterproof Parka",
+    "category": "apparel",
+    "price": 119,
+    "originalPrice": 160,
+    "size": "Large",
+    "color": "Matte Black",
+    "rating": 4.7,
+    "reviewsCount": 204,
+    "sku": "SKU-EXT-OAWDUK",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Triple-layer technical membrane with taped seams and thermal storm collar.",
+    "image": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 119,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 136.85,
+        "shipping": "$4.99 Ground",
+        "status": "+$17.85",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825781653-2",
+    "name": "Carbon Fiber Running Insole Inserts",
+    "category": "shoes",
+    "price": 34.99,
+    "originalPrice": 49.99,
+    "size": "Size 10-11",
+    "color": "Carbon Gray",
+    "rating": 4.7,
+    "reviewsCount": 504,
+    "sku": "SKU-EXT-0Z8JVC",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Aerospace-grade composite spring plate for 12% increased energy restitution.",
+    "image": "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 34.99,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 40.24,
+        "shipping": "$4.99 Ground",
+        "status": "+$5.25",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825781653-3",
+    "name": "Magnetic Quick-Latch Commuter Duffel",
+    "category": "bag",
+    "price": 68,
+    "originalPrice": 95,
+    "size": "35L",
+    "color": "Charcoal",
+    "rating": 4.7,
+    "reviewsCount": 378,
+    "sku": "SKU-EXT-PPEFGM",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Cordura ballistic nylon with Fidlock magnetic buckle systems.",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 68,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 78.2,
+        "shipping": "$4.99 Ground",
+        "status": "+$10.20",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825780696-1",
+    "name": "Urban Minimalist Waterproof Parka",
+    "category": "apparel",
+    "price": 119,
+    "originalPrice": 160,
+    "size": "Large",
+    "color": "Matte Black",
+    "rating": 4.7,
+    "reviewsCount": 694,
+    "sku": "SKU-EXT-UONN8U",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Triple-layer technical membrane with taped seams and thermal storm collar.",
+    "image": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 119,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 136.85,
+        "shipping": "$4.99 Ground",
+        "status": "+$17.85",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825780697-2",
+    "name": "Carbon Fiber Running Insole Inserts",
+    "category": "shoes",
+    "price": 34.99,
+    "originalPrice": 49.99,
+    "size": "Size 10-11",
+    "color": "Carbon Gray",
+    "rating": 4.7,
+    "reviewsCount": 516,
+    "sku": "SKU-EXT-1GJMJJ",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Aerospace-grade composite spring plate for 12% increased energy restitution.",
+    "image": "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 34.99,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 40.24,
+        "shipping": "$4.99 Ground",
+        "status": "+$5.25",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825780697-3",
+    "name": "Magnetic Quick-Latch Commuter Duffel",
+    "category": "bag",
+    "price": 68,
+    "originalPrice": 95,
+    "size": "35L",
+    "color": "Charcoal",
+    "rating": 4.7,
+    "reviewsCount": 696,
+    "sku": "SKU-EXT-BKCN61",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Cordura ballistic nylon with Fidlock magnetic buckle systems.",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 68,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 78.2,
+        "shipping": "$4.99 Ground",
+        "status": "+$10.20",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825779360-1",
+    "name": "Urban Minimalist Waterproof Parka",
+    "category": "apparel",
+    "price": 119,
+    "originalPrice": 160,
+    "size": "Large",
+    "color": "Matte Black",
+    "rating": 4.7,
+    "reviewsCount": 225,
+    "sku": "SKU-EXT-A8R37M",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Triple-layer technical membrane with taped seams and thermal storm collar.",
+    "image": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 119,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 136.85,
+        "shipping": "$4.99 Ground",
+        "status": "+$17.85",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825779360-2",
+    "name": "Carbon Fiber Running Insole Inserts",
+    "category": "shoes",
+    "price": 34.99,
+    "originalPrice": 49.99,
+    "size": "Size 10-11",
+    "color": "Carbon Gray",
+    "rating": 4.7,
+    "reviewsCount": 284,
+    "sku": "SKU-EXT-BH8MA2",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Aerospace-grade composite spring plate for 12% increased energy restitution.",
+    "image": "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 34.99,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 40.24,
+        "shipping": "$4.99 Ground",
+        "status": "+$5.25",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-EXT-1791825779360-3",
+    "name": "Magnetic Quick-Latch Commuter Duffel",
+    "category": "bag",
+    "price": 68,
+    "originalPrice": 95,
+    "size": "35L",
+    "color": "Charcoal",
+    "rating": 4.7,
+    "reviewsCount": 435,
+    "sku": "SKU-EXT-IH3PCB",
+    "inStock": true,
+    "store": "Urban Athletics Co",
+    "deliveryDays": "2-3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Cordura ballistic nylon with Fidlock magnetic buckle systems.",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Urban Athletics Co",
+        "price": 68,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Marketplace Alternative",
+        "price": 78.2,
+        "shipping": "$4.99 Ground",
+        "status": "+$10.20",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-001",
+    "name": "Nike Air Zoom Pegasus 40",
+    "category": "shoes",
+    "price": 74.99,
+    "originalPrice": 99,
+    "size": "10",
+    "color": "Navy & White",
+    "rating": 4.8,
+    "reviewsCount": 1420,
+    "sku": "NIKE-PEG40-10BLU",
+    "inStock": true,
+    "store": "Nike Direct",
+    "deliveryDays": "2 business days",
+    "shippingCost": 0,
+    "returnPolicy": "30-Day Free Returns (PayPal Protected)",
+    "description": "Breathable engineered mesh with dual Zoom Air units for responsive cushioning.",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Nike Direct",
+        "price": 74.99,
+        "shipping": "Free 2-Day",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Dick's Sporting Goods",
+        "price": 89,
+        "shipping": "$4.99 Standard",
+        "status": "+$14.01",
+        "isWinner": false
+      },
+      {
+        "store": "Foot Locker",
+        "price": 95,
+        "shipping": "Free Ground",
+        "status": "+$20.01",
+        "isWinner": false
+      },
+      {
+        "store": "Amazon Logistics",
+        "price": 82.5,
+        "shipping": "Prime 1-Day",
+        "status": "+$7.51",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-002",
+    "name": "Puma Velocity Nitro 2",
+    "category": "shoes",
+    "price": 64.99,
+    "originalPrice": 85,
+    "size": "10",
+    "color": "Electric Blue",
+    "rating": 4.6,
+    "reviewsCount": 640,
+    "sku": "PUMA-NITRO-10BLU",
+    "inStock": true,
+    "store": "Puma Official",
+    "deliveryDays": "3 business days",
+    "shippingCost": 0,
+    "returnPolicy": "45-Day Returns via PayPal Buyer Shield",
+    "description": "NITRO FOAM lightweight responsiveness paired with PUMAGRIP all-surface traction.",
+    "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Puma Official",
+        "price": 64.99,
+        "shipping": "Free Standard",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Zappos",
+        "price": 72,
+        "shipping": "Free 2-Day",
+        "status": "+$7.01",
+        "isWinner": false
+      },
+      {
+        "store": "Finish Line",
+        "price": 79.99,
+        "shipping": "$7.00 Ground",
+        "status": "+$15.00",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-003",
+    "name": "Asics Gel-Kayano 30",
+    "category": "shoes",
+    "price": 79.5,
+    "originalPrice": 110,
+    "size": "10",
+    "color": "Midnight Blue",
+    "rating": 4.9,
+    "reviewsCount": 2100,
+    "sku": "ASICS-KAY30-10BLU",
+    "inStock": true,
+    "store": "RunningWarehouse",
+    "deliveryDays": "2 business days",
+    "shippingCost": 0,
+    "returnPolicy": "60-Day Guarantee",
+    "description": "4D GUIDANCE SYSTEM for adaptive stability and PureGEL rearfoot technology.",
+    "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "RunningWarehouse",
+        "price": 79.5,
+        "shipping": "Free 2-Day",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "Fleet Feet",
+        "price": 94,
+        "shipping": "Free Standard",
+        "status": "+$14.50",
+        "isWinner": false
+      },
+      {
+        "store": "Road Runner Sports",
+        "price": 98.99,
+        "shipping": "$5.99 Ground",
+        "status": "+$19.49",
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "id": "PROD-004",
+    "name": "Sony WH-1000XM5 ANC",
+    "category": "audio",
+    "price": 249.99,
+    "originalPrice": 399.99,
+    "size": "Universal",
+    "color": "Midnight Black",
+    "rating": 4.9,
+    "reviewsCount": 5120,
+    "sku": "SONY-XM5-BLK",
+    "inStock": true,
+    "store": "Best Buy Direct",
+    "deliveryDays": "Next Day Delivery",
+    "shippingCost": 0,
+    "returnPolicy": "14-Day Store & PayPal Return Policy",
+    "description": "Industry-leading noise cancellation with Auto NC Optimizer and 30-hour battery.",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+    "merchantOffers": [
+      {
+        "store": "Best Buy Direct",
+        "price": 249.99,
+        "shipping": "Free 1-Day",
+        "status": "Best Price",
+        "isWinner": true
+      },
+      {
+        "store": "B&H Photo Video",
+        "price": 279,
+        "shipping": "Free 2-Day",
+        "status": "+$29.01",
+        "isWinner": false
+      },
+      {
+        "store": "Target Electronics",
+        "price": 299.99,
+        "shipping": "$9.99 Express",
+        "status": "+$50.00",
+        "isWinner": false
+      }
+    ]
+  }
+]
