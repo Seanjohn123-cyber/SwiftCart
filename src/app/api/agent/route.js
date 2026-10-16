@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCatalog } from "@/lib/catalog";
+import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
 
 const STOP_WORDS = new Set([
   "the",
@@ -185,6 +186,12 @@ function proposeOrder(productId) {
 }
 
 export async function POST(req) {
+  const rateLimit = checkRateLimit(
+    `agent:${getRequestClientKey(req)}`,
+    { limit: 20, windowMs: 60_000 },
+  );
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   try {
     const body = await req.json();
     const prompt =

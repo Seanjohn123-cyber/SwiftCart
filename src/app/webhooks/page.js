@@ -370,7 +370,11 @@ export default function WebhooksPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className="mt-1">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          {evt.status === "REJECTED" ? (
+                            <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -380,13 +384,29 @@ export default function WebhooksPage() {
                             <span className="bg-white/10 text-stone-300 text-[10px] px-2 py-0.5 rounded font-mono">
                               {evt.id}
                             </span>
-                            <span className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                                evt.status === "REJECTED"
+                                  ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
+                                  : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                              }`}
+                            >
                               {evt.status}
                             </span>
-                            <span className="bg-white/10 text-stone-300 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                                evt.source === "PAYPAL_REJECTED"
+                                  ? "bg-rose-500/10 text-rose-300"
+                                  : evt.source === "PAYPAL_VERIFIED"
+                                    ? "bg-emerald-500/10 text-emerald-300"
+                                    : "bg-white/10 text-stone-300"
+                              }`}
+                            >
                               {evt.source === "PAYPAL_VERIFIED"
                                 ? "PayPal verified"
-                                : "Simulator"}
+                                : evt.source === "PAYPAL_REJECTED"
+                                  ? "PayPal rejected"
+                                  : "Simulator"}
                             </span>
                           </div>
                           <p className="text-xs text-stone-300 mt-1">

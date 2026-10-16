@@ -112,8 +112,26 @@ function MerchantPortalContent() {
   // Excel / CSV File Parsing State
   const [parsedRows, setParsedRows] = useState([]);
   const [fileName, setFileName] = useState("");
-  const [importToken, setImportToken] = useState("");
+  const [merchantToken, setMerchantToken] = useState("");
+  const [merchantSessionActive, setMerchantSessionActive] = useState(false);
+  const [merchantAuthBusy, setMerchantAuthBusy] = useState(false);
+  const [merchantAuthMessage, setMerchantAuthMessage] = useState("");
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/merchant/session")
+      .then((response) => response.json())
+      .then((data) => {
+        if (active) setMerchantSessionActive(data.authenticated === true);
+      })
+      .catch((error) => {
+        console.error("Failed to check merchant session:", error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -218,13 +236,44 @@ function MerchantPortalContent() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${importToken.trim()}`,
       },
       body: JSON.stringify({ storeName, items }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to import goods.");
     return data;
+  };
+
+  const handleMerchantLogin = async (event) => {
+    event.preventDefault();
+    setMerchantAuthBusy(true);
+    setMerchantAuthMessage("");
+    try {
+      const response = await fetch("/api/merchant/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: merchantToken }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Merchant sign-in failed.");
+      setMerchantToken("");
+      setMerchantSessionActive(true);
+      setMerchantAuthMessage("Signed in. Inventory publishing is enabled.");
+    } catch (error) {
+      setMerchantAuthMessage(error.message || "Merchant sign-in failed.");
+    } finally {
+      setMerchantAuthBusy(false);
+    }
+  };
+
+  const handleMerchantLogout = async () => {
+    const response = await fetch("/api/merchant/session", { method: "DELETE" });
+    if (!response.ok) {
+      setMerchantAuthMessage("Could not end the merchant session.");
+      return;
+    }
+    setMerchantSessionActive(false);
+    setMerchantAuthMessage("Signed out.");
   };
 
   const handleCommitParsedGoods = async () => {
@@ -412,25 +461,57 @@ function MerchantPortalContent() {
 
       {(activeTab === "excel" || activeTab === "presets") && (
         <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
-          <label
-            htmlFor="merchant-import-token"
-            className="block text-xs font-bold text-amber-100"
-          >
-            Merchant import access token
-          </label>
-          <input
-            id="merchant-import-token"
-            type="password"
-            autoComplete="off"
-            value={importToken}
-            onChange={(event) => setImportToken(event.target.value)}
-            placeholder="Enter the token configured by the app operator"
-            className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-300 sm:max-w-xl"
-          />
-          <p className="mt-2 text-[11px] text-stone-400">
-            Required to publish inventory. The token stays in this page&apos;s memory
-            and is sent only to this app over HTTPS.
-          </p>
+          {merchantSessionActive ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-emerald-200">
+                Merchant session active. The session token is stored in an
+                HttpOnly cookie.
+              </p>
+              <button
+                type="button"
+                onClick={handleMerchantLogout}
+                className="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-stone-200"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleMerchantLogin}>
+              <label
+                htmlFor="merchant-login-token"
+                className="block text-xs font-bold text-amber-100"
+              >
+                Merchant sign-in
+              </label>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  id="merchant-login-token"
+                  type="password"
+                  autoComplete="current-password"
+                  value={merchantToken}
+                  onChange={(event) => setMerchantToken(event.target.value)}
+                  placeholder="Enter merchant credentials"
+                  className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-300 sm:max-w-xl"
+                />
+                <button
+                  type="submit"
+                  disabled={merchantAuthBusy || !merchantToken.trim()}
+                  className="rounded-xl bg-amber-300 px-4 py-2.5 text-xs font-bold text-black disabled:opacity-50"
+                >
+                  {merchantAuthBusy ? "Signing in…" : "Sign in"}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-stone-400">
+                The credential is exchanged with this server and then cleared
+                from the form. It is never stored in browser storage.
+              </p>
+            </form>
+          )}
+          {merchantAuthMessage && (
+            <p className="mt-2 text-xs text-stone-200" role="status">
+              {merchantAuthMessage}
+            </p>
+          )}
         </div>
       )}
 
@@ -589,7 +670,7 @@ function MerchantPortalContent() {
 
                 <button
                   onClick={handleCommitParsedGoods}
-                  disabled={isImporting || !importToken.trim()}
+                  disabled={isImporting || !merchantSessionActive}
                   className="py-2.5 px-6 rounded-xl bg-[#ffc439] hover:bg-[#f5b800] text-[#001c64] font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-400/20 disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -803,7 +884,7 @@ function MerchantPortalContent() {
                     setIsImporting(false);
                   }
                 }}
-                disabled={isImporting || !importToken.trim()}
+                disabled={isImporting || !merchantSessionActive}
                 className="w-full py-2.5 rounded-xl bg-[#eef6fc] hover:bg-[#e8f2fb] text-[#003087] border border-[#c7e0f5] text-xs font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <UploadCloud className="w-4 h-4" />
@@ -850,7 +931,7 @@ function MerchantPortalContent() {
                     setIsImporting(false);
                   }
                 }}
-                disabled={isImporting || !importToken.trim()}
+                disabled={isImporting || !merchantSessionActive}
                 className="w-full py-2.5 rounded-xl bg-[#e8f6ee] hover:bg-[#d8f0e2] text-[#007d3a] border border-[#b7e4c7] text-xs font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <UploadCloud className="w-4 h-4" />

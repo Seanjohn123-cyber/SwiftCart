@@ -4,7 +4,10 @@ import {
   createWebhookTriageInput,
   parseWebhookTriageArguments,
 } from "../src/lib/webhook-triage.js";
-import { recordWebhookEvent } from "../src/lib/webhook-events.js";
+import {
+  createRejectedWebhookEvent,
+  recordWebhookEvent,
+} from "../src/lib/webhook-events.js";
 
 test("sends only allowlisted fields to the AI webhook reviewer", () => {
   const input = createWebhookTriageInput({
@@ -73,4 +76,19 @@ test("duplicate webhook events do not create a second event", () => {
   assert.equal(recordWebhookEvent(events, event), true);
   assert.equal(recordWebhookEvent(events, event), false);
   assert.deepEqual(events, [event]);
+});
+
+test("rejected webhook log records safe metadata without the payload", () => {
+  const event = createRejectedWebhookEvent({
+    eventId: "fake-event",
+    eventType: "PAYMENT.CAPTURE.COMPLETED",
+    reason: "PayPal webhook signature is invalid.",
+    now: "2026-10-16T00:00:00.000Z",
+  });
+
+  assert.equal(event.source, "PAYPAL_REJECTED");
+  assert.equal(event.status, "REJECTED");
+  assert.equal(event.source_event_id, "fake-event");
+  assert.equal(event.resource_type, "unknown");
+  assert.deepEqual(event.resource, {});
 });

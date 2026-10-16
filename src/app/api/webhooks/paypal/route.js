@@ -4,9 +4,31 @@ import {
   createWebhookTriageInput,
   parseWebhookTriageArguments,
 } from "@/lib/webhook-triage";
-import { recordWebhookEvent } from "@/lib/webhook-events";
+import {
+  createRejectedWebhookEvent,
+  recordWebhookEvent,
+} from "@/lib/webhook-events";
+import {
+  checkRateLimit,
+  getRequestClientKey,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 let recentEvents = [];
+
+function rejectWebhook(payload, reason, status = 401) {
+  const event = createRejectedWebhookEvent({
+    eventId: payload?.id,
+    eventType: payload?.event_type,
+    reason,
+  });
+  recordWebhookEvent(recentEvents, event);
+  console.warn("Rejected PayPal webhook:", event.event_type, reason);
+  return NextResponse.json(
+    { error: reason, eventId: event.id },
+    { status },
+  );
+}
 
 async function triageVerifiedEvent(event) {
   if (event.aiAdvisory) {
@@ -109,7 +131,27 @@ async function triageVerifiedEvent(event) {
 }
 
 export async function POST(req) {
-  const payload = await req.json().catch(() => null);
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json(
+      { error: "Webhook payload exceeds the 1 MB limit." },
+      { status: 413 },
+    );
+  }
+
+  const requestBody = await req.text();
+  if (Buffer.byteLength(requestBody, "utf8") > 1024 * 1024) {
+    return NextResponse.json(
+      { error: "Webhook payload exceeds the 1 MB limit." },
+      { status: 413 },
+    );
+  }
+  let payload;
+  try {
+    payload = JSON.parse(requestBody);
+  } catch {
+    payload = null;
+  }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return NextResponse.json(
       { error: "Invalid webhook payload." },
@@ -118,6 +160,12 @@ export async function POST(req) {
   }
 
   if (payload.action === "triage") {
+    const rateLimit = checkRateLimit(
+      `webhook:triage:${getRequestClientKey(req)}`,
+      { limit: 10, windowMs: 60_000 },
+    );
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
     if (typeof payload.eventId !== "string") {
       return NextResponse.json(
         { error: "A verified webhook event ID is required." },
@@ -142,6 +190,12 @@ export async function POST(req) {
       );
     }
   }
+
+  const rateLimit = checkRateLimit(
+    `webhook:receive:${getRequestClientKey(req)}`,
+    { limit: 60, windowMs: 60_000 },
+  );
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
   const isSimulation =
     process.env.NODE_ENV !== "production" &&
@@ -174,9 +228,9 @@ export async function POST(req) {
     ].some((name) => !verificationData[name]);
 
     if (missingHeader) {
-      return NextResponse.json(
-        { error: "Required PayPal signature headers are missing." },
-        { status: 400 },
+      return rejectWebhook(
+        payload,
+        "Required PayPal signature headers are missing.",
       );
     }
 
@@ -200,22 +254,21 @@ export async function POST(req) {
           "PayPal webhook verification request failed:",
           verification,
         );
-        return NextResponse.json(
-          { error: "PayPal could not verify the webhook." },
-          { status: 502 },
+        return rejectWebhook(
+          payload,
+          "PayPal could not verify the webhook.",
+          502,
         );
       }
       if (verification.verification_status !== "SUCCESS") {
-        return NextResponse.json(
-          { error: "PayPal webhook signature is invalid." },
-          { status: 401 },
-        );
+        return rejectWebhook(payload, "PayPal webhook signature is invalid.");
       }
     } catch (error) {
       console.error("PayPal webhook verification failed:", error);
-      return NextResponse.json(
-        { error: "PayPal webhook verification failed." },
-        { status: 502 },
+      return rejectWebhook(
+        payload,
+        "PayPal webhook verification failed.",
+        502,
       );
     }
   }

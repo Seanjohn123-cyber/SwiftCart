@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import { capturePayPalOrder, getPayPalOrder } from "@/lib/paypal";
 import { getCatalog } from "@/lib/catalog";
 import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
+import { getCompletedPayPalCapture } from "@/lib/paypal-capture-validation";
+import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req) {
+  const rateLimit = checkRateLimit(
+    `orders:capture:${getRequestClientKey(req)}`,
+    { limit: 10, windowMs: 60_000 },
+  );
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   try {
-    const { orderId } = await req.json();
+    const body = await req.json().catch(() => null);
+    const orderId = body?.orderId;
 
     if (typeof orderId !== "string" || !/^[A-Z0-9]+$/i.test(orderId)) {
       return NextResponse.json(
@@ -15,21 +24,10 @@ export async function POST(req) {
     }
 
     const order = await getPayPalOrder(orderId);
-    if (order.status === "COMPLETED") {
-      const existingCapture =
-        order.purchase_units?.[0]?.payments?.captures?.[0];
-      if (existingCapture?.status === "COMPLETED") {
-        return NextResponse.json({
-          status: "COMPLETED",
-          id: existingCapture.id,
-          order_id: order.id,
-          purchase_units: order.purchase_units,
-          payer: order.payer,
-        });
-      }
-    }
-
-    if (order.status !== "APPROVED" || order.purchase_units?.length !== 1) {
+    if (
+      !["APPROVED", "COMPLETED"].includes(order.status) ||
+      order.purchase_units?.length !== 1
+    ) {
       return NextResponse.json(
         { error: "Order must be approved before capture." },
         { status: 409 },
@@ -71,11 +69,44 @@ export async function POST(req) {
       );
     }
 
+    if (order.status === "COMPLETED") {
+      const existingCapture = getCompletedPayPalCapture(
+        order,
+        expectedAmount,
+        currency,
+      );
+      if (!existingCapture) {
+        return NextResponse.json(
+          { error: "Completed PayPal order failed capture verification." },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json({
+        status: "COMPLETED",
+        id: existingCapture.id,
+        order_id: order.id,
+        purchase_units: order.purchase_units,
+        payer: order.payer,
+      });
+    }
+
     const captureData = await capturePayPalOrder(orderId);
+    const completedCapture = getCompletedPayPalCapture(
+      captureData,
+      expectedAmount,
+      currency,
+    );
+    if (!completedCapture) {
+      console.error("PayPal capture response failed status or amount verification.");
+      return NextResponse.json(
+        { error: "PayPal did not confirm the expected completed capture." },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({
-      status: captureData.status,
-      id: captureData.id,
+      status: completedCapture.status,
+      id: completedCapture.id,
       purchase_units: captureData.purchase_units,
       payer: captureData.payer,
     });

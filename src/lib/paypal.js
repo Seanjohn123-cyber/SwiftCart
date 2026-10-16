@@ -3,8 +3,38 @@
  * Handles authentication, order creation, and capture.
  */
 
-export const PAYPAL_API_BASE =
+const configuredPayPalApiBase =
   process.env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com";
+const parsedPayPalApiBase = new URL(configuredPayPalApiBase);
+if (
+  parsedPayPalApiBase.protocol !== "https:" ||
+  !["api-m.sandbox.paypal.com", "api-m.paypal.com"].includes(
+    parsedPayPalApiBase.hostname,
+  )
+) {
+  throw new Error("PAYPAL_API_BASE must be an official HTTPS PayPal API host.");
+}
+
+export const PAYPAL_API_BASE = parsedPayPalApiBase.origin;
+
+export function getAppBaseUrl() {
+  const configuredUrl =
+    process.env.APP_BASE_URL ||
+    (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
+  if (!configuredUrl) {
+    throw new Error("APP_BASE_URL must be configured for production checkout.");
+  }
+
+  const url = new URL(configuredUrl);
+  const isLocalDevelopment =
+    process.env.NODE_ENV !== "production" &&
+    ["localhost", "127.0.0.1"].includes(url.hostname);
+  if (url.protocol !== "https:" && !isLocalDevelopment) {
+    throw new Error("APP_BASE_URL must use HTTPS.");
+  }
+
+  return url.origin;
+}
 
 /**
  * Generate an OAuth 2.0 access token using client credentials
@@ -49,8 +79,10 @@ export async function createPayPalOrder({
   currency = "USD",
   sku = "SKU-001",
   customId,
+  requestId,
 } = {}) {
   const accessToken = await getPayPalAccessToken();
+  const appBaseUrl = getAppBaseUrl();
 
   const payload = {
     intent: "CAPTURE",
@@ -87,8 +119,8 @@ export async function createPayPalOrder({
       brand_name: "SwiftCart Agent",
       landing_page: "NO_PREFERENCE",
       user_action: "PAY_NOW",
-      return_url: "http://localhost:3000/order/success",
-      cancel_url: "http://localhost:3000/order/cancel",
+      return_url: `${appBaseUrl}/?checkout=success`,
+      cancel_url: `${appBaseUrl}/?checkout=cancelled`,
     },
   };
 
@@ -98,6 +130,7 @@ export async function createPayPalOrder({
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
+      ...(requestId ? { "PayPal-Request-Id": requestId } : {}),
     },
     body: JSON.stringify(payload),
   });

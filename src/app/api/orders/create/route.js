@@ -2,15 +2,28 @@ import { NextResponse } from "next/server";
 import { createPayPalOrder } from "@/lib/paypal";
 import { getCatalog } from "@/lib/catalog";
 import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
+import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req) {
+  const rateLimit = checkRateLimit(
+    `orders:create:${getRequestClientKey(req)}`,
+    { limit: 5, windowMs: 60_000 },
+  );
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   try {
     const body = await req.json().catch(() => null);
     const productId = body?.productId;
     const currency = body?.currency || "USD";
-    if (typeof productId !== "string" || !SUPPORTED_CURRENCIES[currency]) {
+    const requestId = req.headers.get("idempotency-key");
+    if (
+      typeof productId !== "string" ||
+      !SUPPORTED_CURRENCIES[currency] ||
+      !requestId ||
+      !/^[0-9a-f-]{36}$/i.test(requestId)
+    ) {
       return NextResponse.json(
-        { error: "A valid product and currency are required." },
+        { error: "A valid product, currency, and idempotency key are required." },
         { status: 400 },
       );
     }
@@ -37,6 +50,7 @@ export async function POST(req) {
       currency,
       sku: product.sku,
       customId: `swiftcart:${product.id}`,
+      requestId,
     });
 
     return NextResponse.json({

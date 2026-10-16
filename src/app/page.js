@@ -442,7 +442,10 @@ function HomeContent() {
         try {
           const res = await fetch("/api/orders/create", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Idempotency-Key": crypto.randomUUID(),
+            },
             body: JSON.stringify({
               productId: activeItem.id,
               currency: selectedCurrency,

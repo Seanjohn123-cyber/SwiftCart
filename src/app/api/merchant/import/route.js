@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import fs from 'fs';
 import path from 'path';
-import { isAuthorizedMerchantImport } from '@/lib/merchant-import-auth';
+import { isAuthorizedMerchantRequest } from '@/lib/merchant-session';
 
 const CATALOG_PATH = path.join(process.cwd(), 'src', 'data', 'catalog.json');
 
@@ -40,9 +40,9 @@ function getPhotoForProduct(item) {
 }
 
 export async function POST(req) {
-  if (!isAuthorizedMerchantImport(
+  if (!isAuthorizedMerchantRequest(
+    req,
     process.env.MERCHANT_IMPORT_TOKEN,
-    req.headers.get('authorization')
   )) {
     return NextResponse.json(
       { error: process.env.MERCHANT_IMPORT_TOKEN ? 'Merchant import is unauthorized.' : 'Merchant import is not configured.' },

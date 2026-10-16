@@ -21,3 +21,5 @@ services:
         value: gpt-4o-mini
       - key: PAYPAL_API_BASE
         value: https://api-m.sandbox.paypal.com
+      - key: APP_BASE_URL
+        value: https://swiftcart-agent-shopper.onrender.com

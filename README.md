@@ -44,11 +44,12 @@ PAYPAL_CLIENT_SECRET=your_sandbox_rest_client_secret
 PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
 PAYPAL_WEBHOOK_ID=your_sandbox_webhook_id
 MERCHANT_IMPORT_TOKEN=replace_with_a_random_token_of_at_least_32_characters
+APP_BASE_URL=http://localhost:3000
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-`OPENAI_API_KEY` is optional; without it, the local rules planner is used. PayPal credentials are required for checkout. `PAYPAL_WEBHOOK_ID` is required to verify PayPal webhook notifications. `MERCHANT_IMPORT_TOKEN` is required to publish inventory from the Inventory screen; enter the token in the import panel when prompted.
+`OPENAI_API_KEY` is optional; without it, the local rules planner is used. PayPal credentials are required for checkout. `PAYPAL_WEBHOOK_ID` is required to verify PayPal webhook notifications. `MERCHANT_IMPORT_TOKEN` is required for merchant sign-in and server-to-server inventory imports. The merchant UI exchanges it for a one-hour, HttpOnly, SameSite=Strict session cookie; the token is not retained by the browser. In production, `APP_BASE_URL` must be your HTTPS site origin.
 
 ```bash
 npm run dev
@@ -64,7 +65,7 @@ npm run build
 
 ## Deploy on Render
 
-The repository includes `render.yaml` for a full-stack Node web service. Create a Blueprint from this repository and configure the PayPal Sandbox values, a strong `MERCHANT_IMPORT_TOKEN`, and optionally `OPENAI_API_KEY` in Render's environment settings. Never put credentials in the Blueprint or source.
+The repository includes `render.yaml` for a full-stack Node web service. Create a Blueprint from this repository and configure the PayPal Sandbox values, a strong `MERCHANT_IMPORT_TOKEN`, and optionally `OPENAI_API_KEY` in Render's environment settings. Never put credentials in the Blueprint or source. Set `APP_BASE_URL` to the deployed HTTPS origin.
 
 Set the PayPal Sandbox webhook listener URL to:
 
@@ -72,21 +73,25 @@ Set the PayPal Sandbox webhook listener URL to:
 https://<render-service>.onrender.com/api/webhooks/paypal
 ```
 
-Subscribe to `PAYMENT.CAPTURE.COMPLETED` and optionally `CHECKOUT.ORDER.APPROVED`; set the matching `PAYPAL_WEBHOOK_ID` in Render. Webhook history and imported inventory are in-memory/local-file demo storage and will not be durable across restarts or instances.
+Subscribe to `PAYMENT.CAPTURE.COMPLETED` and optionally `CHECKOUT.ORDER.APPROVED`; set the matching `PAYPAL_WEBHOOK_ID` in Render. Rejected signature attempts are logged in the Webhooks tab without retaining the submitted payload. Webhook history, rate limits, and imported inventory use in-memory/local-file demo storage; they are not durable or shared across restarts or instances. Use a shared database/cache and durable inventory store for multi-instance production.
 
 ## Failure-path demo checklist
 
 - **Cancelled checkout:** open the PayPal popup and cancel before approval; the page reports that no payment was captured.
 - **Declined payment:** use a PayPal Sandbox buyer/payment method configured to decline; the UI reports the SDK or capture failure and does not show a successful receipt.
 - **Duplicate webhook:** in local development, dispatch a simulated event and select **Replay last event**; the second response reports `duplicate: true` and does not add another event. The simulator is intentionally disabled in production.
+- **Rejected webhook:** locally, POST a fake event without PayPal signature headers; it returns 401 and adds a payload-free **REJECTED** row to the Webhooks tab. The simulator is intentionally disabled in production.
 - **AI webhook review:** expand an event marked PayPal verified and select **Review with AI**. Simulated events cannot be submitted for AI triage.
 
 ## Security notes
 
 - `.env*` files are ignored by Git. Keep `PAYPAL_CLIENT_SECRET`, `OPENAI_API_KEY`, and `MERCHANT_IMPORT_TOKEN` server-side.
 - `NEXT_PUBLIC_PAYPAL_CLIENT_ID` is public-facing; the PayPal Client Secret is not.
-- Inventory import POSTs require a bearer token configured as `MERCHANT_IMPORT_TOKEN`, validate payload size and product prices, and accept only approved product-image hosts.
+- The app emits HSTS and standard content-type/referrer security headers. Render terminates HTTPS; the app refuses non-HTTPS/non-PayPal hosts for its PayPal REST API base.
+- Merchant inventory writes accept either a server-to-server bearer token or a one-hour signed HttpOnly session cookie established by the merchant login. Login attempts are rate-limited; the browser never stores the configured token after login.
 - PayPal webhook POSTs are verified against PayPal using the configured webhook ID before processing. Mock simulator events are clearly labeled and only accepted outside production.
+- Agent search, checkout creation/capture, webhook receipt/AI review, and merchant login have per-process IP-based rate limits. These are demo safeguards, not a distributed limit for production deployments.
+- PayPal capture responses must report `COMPLETED` and match the server-computed amount and currency before the app reports success. Order creation and capture use PayPal idempotency request IDs.
 - Public health checks report configuration state only; they do not request or return access tokens.
 - The PayPal integration is configured for Sandbox by default. Do not switch to live payments without a separate production review.
 
