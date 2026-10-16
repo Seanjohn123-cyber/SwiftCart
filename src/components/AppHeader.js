@@ -7,6 +7,7 @@ import BrandMark from "./BrandMark";
 
 const NAV = [
   { href: "/", label: "Shop" },
+  { href: "/account", label: "Account" },
   { href: "/signup-store", label: "Sell" },
   { href: "/merchant", label: "Inventory" },
   { href: "/webhooks", label: "Webhooks" },

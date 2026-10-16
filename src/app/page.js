@@ -8,6 +8,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import {
@@ -616,6 +617,17 @@ function HomeContent() {
                   Real-time cross-merchant price arbitration, foreign exchange
                   settlement, and 1-click PayPal Orders v2 execution.
                 </p>
+                <p className="mt-2 text-xs text-stone-300">
+                  {paymentSuccess.purchaseHistoryMessage}
+                </p>
+                {paymentSuccess.purchaseHistorySaved && (
+                  <Link
+                    href="/account"
+                    className="mt-1 inline-block text-xs font-bold text-emerald-300 underline underline-offset-2"
+                  >
+                    View purchase history
+                  </Link>
+                )}
               </div>
 
               {/* Natural Language Prompt Search Bar */}
@@ -1229,6 +1241,17 @@ function HomeContent() {
                 </p>
               )}
 
+              <p className="mb-3 text-center text-[11px] leading-5 text-stone-400">
+                <Link
+                  href="/account"
+                  className="font-semibold text-amber-200 underline underline-offset-2"
+                >
+                  Sign in or create an account
+                </Link>{" "}
+                before checkout to save this purchase. Guest checkout is
+                available too.
+              </p>
+
               {paypalButtonsComponent}
             </div>
           </div>
@@ -1531,6 +1554,17 @@ function HomeContent() {
                   </span>
                 </div>
               </div>
+              <p className="mt-3 text-center text-xs leading-5 text-stone-300">
+                {paymentSuccess.purchaseHistoryMessage}
+              </p>
+              {paymentSuccess.purchaseHistorySaved && (
+                <Link
+                  href="/account"
+                  className="mt-2 block text-center text-xs font-bold text-emerald-300 underline underline-offset-2"
+                >
+                  View purchase history
+                </Link>
+              )}
 
               <div className="mt-5 flex gap-2">
                 <button

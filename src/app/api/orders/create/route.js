@@ -3,6 +3,12 @@ import { createPayPalOrder } from "@/lib/paypal";
 import { getCatalog } from "@/lib/catalog";
 import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
 import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
+import { getCustomerSessionSubjectFromRequest } from "@/lib/customer-auth";
+import {
+  isCustomerDatabaseConfigured,
+  linkCustomerCheckoutOrder,
+  reserveCustomerCheckoutIntent,
+} from "@/lib/customer-db";
 
 export async function POST(req) {
   const rateLimit = checkRateLimit(
@@ -43,6 +49,26 @@ export async function POST(req) {
 
     const decimals = SUPPORTED_CURRENCIES[currency].decimals;
     const price = convertAmount(product.price, currency).toFixed(decimals);
+    const customerId = getCustomerSessionSubjectFromRequest(req);
+    if (customerId) {
+      if (!isCustomerDatabaseConfigured()) {
+        return NextResponse.json(
+          { error: "Customer accounts are temporarily unavailable." },
+          { status: 503 },
+        );
+      }
+      const reserved = await reserveCustomerCheckoutIntent({
+        idempotencyKey: requestId,
+        customerId,
+        productId: product.id,
+      });
+      if (!reserved) {
+        return NextResponse.json(
+          { error: "This checkout request does not match the signed-in account." },
+          { status: 409 },
+        );
+      }
+    }
 
     const order = await createPayPalOrder({
       name: product.name,
@@ -52,6 +78,25 @@ export async function POST(req) {
       customId: `swiftcart:${product.id}`,
       requestId,
     });
+
+    if (
+      customerId &&
+      !(await linkCustomerCheckoutOrder({
+        idempotencyKey: requestId,
+        customerId,
+        productId: product.id,
+        orderId: order.id,
+      }))
+    ) {
+      console.error("PayPal order could not be linked to its customer checkout intent.");
+      return NextResponse.json(
+        {
+          error:
+            "The PayPal order was created, but account tracking could not be confirmed. Contact support before retrying checkout.",
+        },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({
       id: order.id,

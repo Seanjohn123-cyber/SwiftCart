@@ -1,9 +1,49 @@
 import { NextResponse } from "next/server";
 import { capturePayPalOrder, getPayPalOrder } from "@/lib/paypal";
 import { getCatalog } from "@/lib/catalog";
+
+async function getPurchaseHistoryStatus(orderId, capture, product, currency) {
+  if (!isCustomerDatabaseConfigured()) {
+    return {
+      purchaseHistorySaved: false,
+      purchaseHistoryMessage:
+        "Customer accounts are not configured; this purchase was not added to purchase history.",
+    };
+  }
+
+  try {
+    const saved = await saveCustomerPurchase({
+      orderId,
+      captureId: capture.id,
+      product,
+      amount: capture.amount.value,
+      currency,
+    });
+    return {
+      purchaseHistorySaved: saved,
+      purchaseHistoryMessage: saved
+        ? "Purchase saved to your SwiftCart account."
+        : "This guest purchase was not saved. Sign in before checkout to keep it in your purchase history.",
+    };
+  } catch (error) {
+    console.error(
+      "PayPal capture completed, but purchase history could not be saved:",
+      error,
+    );
+    return {
+      purchaseHistorySaved: false,
+      purchaseHistoryMessage:
+        "Payment completed, but purchase history could not be saved. Contact support with your capture ID.",
+    };
+  }
+}
 import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
 import { getCompletedPayPalCapture } from "@/lib/paypal-capture-validation";
 import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  isCustomerDatabaseConfigured,
+  saveCustomerPurchase,
+} from "@/lib/customer-db";
 
 export async function POST(req) {
   const rateLimit = checkRateLimit(
@@ -81,12 +121,19 @@ export async function POST(req) {
           { status: 502 },
         );
       }
+      const historyStatus = await getPurchaseHistoryStatus(
+        orderId,
+        existingCapture,
+        product,
+        currency,
+      );
       return NextResponse.json({
         status: "COMPLETED",
         id: existingCapture.id,
         order_id: order.id,
         purchase_units: order.purchase_units,
         payer: order.payer,
+        ...historyStatus,
       });
     }
 
@@ -104,11 +151,18 @@ export async function POST(req) {
       );
     }
 
+    const historyStatus = await getPurchaseHistoryStatus(
+      orderId,
+      completedCapture,
+      product,
+      currency,
+    );
     return NextResponse.json({
       status: completedCapture.status,
       id: completedCapture.id,
       purchase_units: captureData.purchase_units,
       payer: captureData.payer,
+      ...historyStatus,
     });
   } catch (error) {
     console.error("Error capturing PayPal order:", error);

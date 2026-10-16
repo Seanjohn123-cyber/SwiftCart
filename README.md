@@ -14,6 +14,7 @@ SwiftCart helps a budget-conscious runner find an in-stock shoe in the right siz
 - Uses local catalog rules when `OPENAI_API_KEY` is not set or the model is unavailable. The Copilot UI reports the active mode.
 - Proposes an item for the cart, then waits for the shopper to approve checkout.
 - Creates PayPal Orders v2 orders from server-side product prices. Before capture, server code verifies the PayPal order status, item, SKU, currency, amount, stock, and quantity. AI cannot approve or capture a payment.
+- Supports customer signup/sign-in and a PostgreSQL-backed purchase history. Signed-in checkouts are associated with the account at order creation; only completed, server-verified PayPal captures are saved. Guest checkout remains available.
 - Provides seller and inventory screens, a webhook event viewer, multi-currency display, and service status checks.
 - Offers an AI webhook review for verified PayPal events. It receives only an allowlisted subset of event fields and returns a human-review advisory; it cannot alter payment state.
 
@@ -26,7 +27,7 @@ SwiftCart helps a budget-conscious runner find an in-stock shoe in the right siz
 - **PayPal JavaScript SDK and Orders v2 REST API:** Sandbox buyer approval, server-side order creation, and validated capture.
 - **PayPal Webhooks API:** verifies webhook signatures before recording real events. A development-only simulator is available outside production.
 - **Render:** hosts the full-stack Next.js app and its API routes.
-- **JSON catalog:** sample products and merchant offers. Inventory writes use the app's local filesystem, which is ephemeral on Render; use a database for durable production inventory and events.
+- **Neon PostgreSQL:** customer accounts, checkout ownership, and purchase history. Inventory writes still use the app's local filesystem, which is ephemeral on Render.
 
 ## Run locally
 
@@ -47,9 +48,13 @@ MERCHANT_IMPORT_TOKEN=replace_with_a_random_token_of_at_least_32_characters
 APP_BASE_URL=http://localhost:3000
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
+DATABASE_URL=your_neon_postgres_connection_string
+CUSTOMER_SESSION_SECRET=replace_with_at_least_32_random_bytes
 ```
 
 `OPENAI_API_KEY` is optional; without it, the local rules planner is used. PayPal credentials are required for checkout. `PAYPAL_WEBHOOK_ID` is required to verify PayPal webhook notifications. `MERCHANT_IMPORT_TOKEN` is required for merchant sign-in and server-to-server inventory imports. The merchant UI exchanges it for a one-hour, HttpOnly, SameSite=Strict session cookie; the token is not retained by the browser. In production, `APP_BASE_URL` must be your HTTPS site origin.
+
+Customer signup and purchase history require a Neon PostgreSQL database. Create a database, copy its connection string into `DATABASE_URL`, and generate a separate session secret (for example, `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`). Set that value as `CUSTOMER_SESSION_SECRET`; never commit either value. The app creates the customer tables on first use. Customer passwords are scrypt-hashed, sessions are signed HttpOnly cookies, and purchases are linked to an account only when checkout starts while signed in. Email verification and password recovery are not enabled in this demo.
 
 ```bash
 npm run dev
@@ -65,7 +70,7 @@ npm run build
 
 ## Deploy on Render
 
-The repository includes `render.yaml` for a full-stack Node web service. Create a Blueprint from this repository and configure the PayPal Sandbox values, a strong `MERCHANT_IMPORT_TOKEN`, and optionally `OPENAI_API_KEY` in Render's environment settings. Never put credentials in the Blueprint or source. Set `APP_BASE_URL` to the deployed HTTPS origin.
+The repository includes `render.yaml` for a full-stack Node web service. Create a Blueprint from this repository and configure the PayPal Sandbox values, a strong `MERCHANT_IMPORT_TOKEN`, Neon `DATABASE_URL`, a generated `CUSTOMER_SESSION_SECRET`, and optionally `OPENAI_API_KEY` in Render's environment settings. Never put credentials in the Blueprint or source. Set `APP_BASE_URL` to the deployed HTTPS origin.
 
 Set the PayPal Sandbox webhook listener URL to:
 
@@ -73,7 +78,7 @@ Set the PayPal Sandbox webhook listener URL to:
 https://<render-service>.onrender.com/api/webhooks/paypal
 ```
 
-Subscribe to `PAYMENT.CAPTURE.COMPLETED` and optionally `CHECKOUT.ORDER.APPROVED`; set the matching `PAYPAL_WEBHOOK_ID` in Render. Rejected signature attempts are logged in the Webhooks tab without retaining the submitted payload. Webhook history, rate limits, and imported inventory use in-memory/local-file demo storage; they are not durable or shared across restarts or instances. Use a shared database/cache and durable inventory store for multi-instance production.
+Subscribe to `PAYMENT.CAPTURE.COMPLETED` and optionally `CHECKOUT.ORDER.APPROVED`; set the matching `PAYPAL_WEBHOOK_ID` in Render. Rejected signature attempts are logged in the Webhooks tab without retaining the submitted payload. Webhook history, rate limits, and imported inventory use in-memory/local-file demo storage; they are not durable or shared across restarts or instances. Customer accounts and purchases use Neon PostgreSQL.
 
 ## Failure-path demo checklist
 

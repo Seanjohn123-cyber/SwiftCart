@@ -14,6 +14,11 @@ export async function GET() {
     process.env.MERCHANT_IMPORT_TOKEN &&
       process.env.MERCHANT_IMPORT_TOKEN.length >= 32,
   );
+  const customerAccountsConfigured = Boolean(
+    process.env.DATABASE_URL &&
+      process.env.CUSTOMER_SESSION_SECRET &&
+      Buffer.byteLength(process.env.CUSTOMER_SESSION_SECRET, "utf8") >= 32,
+  );
 
   const results = {
     timestamp: new Date().toISOString(),
@@ -75,6 +80,16 @@ export async function GET() {
         details: merchantImportConfigured
           ? "Inventory writes require the configured bearer token."
           : "Set a merchant import token of at least 32 characters to enable inventory writes.",
+      },
+      {
+        id: "customer_accounts",
+        name: "Customer Accounts & Purchase History",
+        endpoint: "/api/customer",
+        status: customerAccountsConfigured ? "configured" : "degraded",
+        latency: "checked during account requests",
+        details: customerAccountsConfigured
+          ? "Neon/PostgreSQL-backed accounts and verified completed PayPal purchase history are configured."
+          : "Set DATABASE_URL and a CUSTOMER_SESSION_SECRET of at least 32 bytes to enable customer accounts.",
       },
       {
         id: "fx_engine",
