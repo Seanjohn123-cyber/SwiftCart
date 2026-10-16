@@ -35,7 +35,10 @@ export default function ConnectionsPage() {
   };
 
   useEffect(() => {
-    fetchHealth();
+    const initialLoad = window.setTimeout(() => {
+      void fetchHealth();
+    }, 0);
+    return () => window.clearTimeout(initialLoad);
   }, []);
 
   return (
@@ -127,7 +130,8 @@ export default function ConnectionsPage() {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {data?.services?.map((svc) => {
-              const isOk = svc.status === "operational";
+              const isOk =
+                svc.status === "operational" || svc.status === "configured";
               return (
                 <div
                   key={svc.id}

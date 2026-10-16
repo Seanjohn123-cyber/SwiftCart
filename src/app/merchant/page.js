@@ -112,12 +112,14 @@ function MerchantPortalContent() {
   // Excel / CSV File Parsing State
   const [parsedRows, setParsedRows] = useState([]);
   const [fileName, setFileName] = useState("");
+  const [importToken, setImportToken] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam) {
-      setActiveTab(tabParam);
+      const updateTab = window.setTimeout(() => setActiveTab(tabParam), 0);
+      return () => window.clearTimeout(updateTab);
     }
   }, [searchParams]);
 
@@ -136,7 +138,10 @@ function MerchantPortalContent() {
   };
 
   useEffect(() => {
-    fetchCatalogStatus();
+    const initialLoad = window.setTimeout(() => {
+      void fetchCatalogStatus();
+    }, 0);
+    return () => window.clearTimeout(initialLoad);
   }, []);
 
   // Handle Drag & Drop Excel / CSV Upload
@@ -208,31 +213,33 @@ function MerchantPortalContent() {
   };
 
   // Commit Parsed Goods to the Server Catalog
+  const postCatalogImport = async (storeName, items) => {
+    const res = await fetch("/api/merchant/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${importToken.trim()}`,
+      },
+      body: JSON.stringify({ storeName, items }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to import goods.");
+    return data;
+  };
+
   const handleCommitParsedGoods = async () => {
     if (!parsedRows || parsedRows.length === 0) return;
 
     setIsImporting(true);
     try {
-      const res = await fetch("/api/merchant/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeName: storeProfile.name,
-          items: parsedRows,
-        }),
+      const data = await postCatalogImport(storeProfile.name, parsedRows);
+      setImportStatus({
+        type: "success",
+        message: `Successfully ingested ${data.importedCount} new goods into the catalog! Total live inventory is now ${data.totalCatalogCount} items.`,
       });
-      const data = await res.json();
-      if (data.success) {
-        setImportStatus({
-          type: "success",
-          message: `Successfully ingested ${data.importedCount} new goods into the catalog! Total live inventory is now ${data.totalCatalogCount} items.`,
-        });
-        setParsedRows([]);
-        setFileName("");
-        fetchCatalogStatus();
-      } else {
-        throw new Error(data.error || "Failed to import goods.");
-      }
+      setParsedRows([]);
+      setFileName("");
+      fetchCatalogStatus();
     } catch (err) {
       setImportStatus({
         type: "error",
@@ -403,6 +410,30 @@ function MerchantPortalContent() {
         ))}
       </div>
 
+      {(activeTab === "excel" || activeTab === "presets") && (
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
+          <label
+            htmlFor="merchant-import-token"
+            className="block text-xs font-bold text-amber-100"
+          >
+            Merchant import access token
+          </label>
+          <input
+            id="merchant-import-token"
+            type="password"
+            autoComplete="off"
+            value={importToken}
+            onChange={(event) => setImportToken(event.target.value)}
+            placeholder="Enter the token configured by the app operator"
+            className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-300 sm:max-w-xl"
+          />
+          <p className="mt-2 text-[11px] text-stone-400">
+            Required to publish inventory. The token stays in this page&apos;s memory
+            and is sent only to this app over HTTPS.
+          </p>
+        </div>
+      )}
+
       {activeTab === "inventory" && (
         <section className="overflow-hidden rounded-[18px] border border-[#e4ebeb] bg-white p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -410,7 +441,7 @@ function MerchantPortalContent() {
               <h2 className="text-sm font-extrabold">Catalog inventory</h2>
               <p className="mt-1 text-xs text-[#596669]">
                 {loading
-                  ? "Loading listings…"
+                  ? "Loading listingsâ€¦"
                   : `${catalogItems.length} listings in the catalog`}
               </p>
             </div>
@@ -464,7 +495,7 @@ function MerchantPortalContent() {
           ) : (
             <div className="py-10 text-center text-sm text-[#596669]">
               {loading
-                ? "Loading catalog…"
+                ? "Loading catalogâ€¦"
                 : "No listings yet. Add products to populate your catalog."}
             </div>
           )}
@@ -558,7 +589,7 @@ function MerchantPortalContent() {
 
                 <button
                   onClick={handleCommitParsedGoods}
-                  disabled={isImporting}
+                  disabled={isImporting || !importToken.trim()}
                   className="py-2.5 px-6 rounded-xl bg-[#ffc439] hover:bg-[#f5b800] text-[#001c64] font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-400/20 disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -596,7 +627,7 @@ function MerchantPortalContent() {
                           ${r.price.toFixed(2)}
                         </td>
                         <td className="p-3 text-[#545d68]">
-                          {r.size} · {r.color}
+                          {r.size} Â· {r.color}
                         </td>
                         <td className="p-3">
                           <span className="text-[10px] bg-emerald-500/20 text-[#007d3a] px-2 py-0.5 rounded font-bold">
@@ -755,15 +786,10 @@ function MerchantPortalContent() {
                 onClick={async () => {
                   setIsImporting(true);
                   try {
-                    const res = await fetch("/api/merchant/import", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        storeName: "Urban Athletics Co",
-                        items: PRESET_FEEDS.urban,
-                      }),
-                    });
-                    const d = await res.json();
+                    const d = await postCatalogImport(
+                      "Urban Athletics Co",
+                      PRESET_FEEDS.urban,
+                    );
                     if (d.success) {
                       setImportStatus({
                         type: "success",
@@ -771,11 +797,13 @@ function MerchantPortalContent() {
                       });
                       fetchCatalogStatus();
                     }
+                  } catch (err) {
+                    setImportStatus({ type: "error", message: err.message });
                   } finally {
                     setIsImporting(false);
                   }
                 }}
-                disabled={isImporting}
+                disabled={isImporting || !importToken.trim()}
                 className="w-full py-2.5 rounded-xl bg-[#eef6fc] hover:bg-[#e8f2fb] text-[#003087] border border-[#c7e0f5] text-xs font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <UploadCloud className="w-4 h-4" />
@@ -805,15 +833,10 @@ function MerchantPortalContent() {
                 onClick={async () => {
                   setIsImporting(true);
                   try {
-                    const res = await fetch("/api/merchant/import", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        storeName: "Alpine Outdoor Labs",
-                        items: PRESET_FEEDS.alpine,
-                      }),
-                    });
-                    const d = await res.json();
+                    const d = await postCatalogImport(
+                      "Alpine Outdoor Labs",
+                      PRESET_FEEDS.alpine,
+                    );
                     if (d.success) {
                       setImportStatus({
                         type: "success",
@@ -821,11 +844,13 @@ function MerchantPortalContent() {
                       });
                       fetchCatalogStatus();
                     }
+                  } catch (err) {
+                    setImportStatus({ type: "error", message: err.message });
                   } finally {
                     setIsImporting(false);
                   }
                 }}
-                disabled={isImporting}
+                disabled={isImporting || !importToken.trim()}
                 className="w-full py-2.5 rounded-xl bg-[#e8f6ee] hover:bg-[#d8f0e2] text-[#007d3a] border border-[#b7e4c7] text-xs font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <UploadCloud className="w-4 h-4" />
@@ -896,7 +921,7 @@ export default function MerchantPortal() {
     <PageShell>
       <Suspense
         fallback={
-          <div className="text-sm text-[#545d68]">Loading merchant portal…</div>
+          <div className="text-sm text-[#545d68]">Loading merchant portalâ€¦</div>
         }
       >
         <MerchantPortalContent />

@@ -1,96 +1,93 @@
-import { NextResponse } from 'next/server';
-import { getPayPalAccessToken } from '@/lib/paypal';
-import catalog from '@/data/catalog.json';
+import { NextResponse } from "next/server";
+import { getCatalog } from "@/lib/catalog";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const paypalConfigured = Boolean(
+    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID &&
+      process.env.PAYPAL_CLIENT_SECRET,
+  );
+  const openAiConfigured = Boolean(process.env.OPENAI_API_KEY);
+  const webhookConfigured = Boolean(process.env.PAYPAL_WEBHOOK_ID);
+  const merchantImportConfigured = Boolean(
+    process.env.MERCHANT_IMPORT_TOKEN &&
+      process.env.MERCHANT_IMPORT_TOKEN.length >= 32,
+  );
+
   const results = {
     timestamp: new Date().toISOString(),
-    services: []
+    services: [
+      {
+        id: "paypal_oauth",
+        name: "PayPal Sandbox OAuth 2.0 Service",
+        endpoint: "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+        status: paypalConfigured ? "configured" : "degraded",
+        latency: "not probed",
+        details: paypalConfigured
+          ? "Credentials are configured. This public health check does not request or expose access tokens."
+          : "PayPal credentials are not configured.",
+      },
+      {
+        id: "paypal_orders_v2",
+        name: "PayPal Orders v2 Checkout Engine",
+        endpoint: "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+        status: paypalConfigured ? "configured" : "degraded",
+        latency: "checked during checkout",
+        details: paypalConfigured
+          ? "Checkout connectivity is checked when an order is created or captured."
+          : "Configure PayPal credentials to enable checkout.",
+      },
+      {
+        id: "catalog_db",
+        name: "Multi-Merchant Product Catalog",
+        endpoint: "local://catalog.json",
+        status: "operational",
+        latency: "local",
+        details: `${getCatalog().length} items available in the local catalog.`,
+      },
+      {
+        id: "agent_orchestrator",
+        name: "SwiftCart Agentic Decision Engine",
+        endpoint: "/api/agent",
+        status: openAiConfigured ? "configured" : "degraded",
+        latency: "request-based",
+        details: openAiConfigured
+          ? `OpenAI tool planner configured (${process.env.OPENAI_MODEL || "gpt-4o-mini"}); catalog prices are validated server-side.`
+          : "Local catalog rules are active; configure OPENAI_API_KEY for model-based tool calling.",
+      },
+      {
+        id: "paypal_webhooks",
+        name: "PayPal Asynchronous Webhook Listener",
+        endpoint: "/api/webhooks/paypal",
+        status: webhookConfigured ? "configured" : "degraded",
+        latency: "request-based",
+        details: webhookConfigured
+          ? "Signature verification is configured. Event history is held in process memory for this demo."
+          : "PayPal webhook signature verification is not configured.",
+      },
+      {
+        id: "merchant_import",
+        name: "Protected Merchant Inventory Import",
+        endpoint: "/api/merchant/import",
+        status: merchantImportConfigured ? "configured" : "degraded",
+        latency: "request-based",
+        details: merchantImportConfigured
+          ? "Inventory writes require the configured bearer token."
+          : "Set a merchant import token of at least 32 characters to enable inventory writes.",
+      },
+      {
+        id: "fx_engine",
+        name: "Multi-Currency & FX Engine",
+        endpoint: "/api/fx",
+        status: "operational",
+        latency: "local",
+        details: "6 PayPal settlement currencies active: USD, EUR, GBP, CAD, AUD, JPY.",
+      },
+    ],
   };
 
-  // 1. Check PayPal OAuth 2.0 & Sandbox
-  const t0 = Date.now();
-  try {
-    const token = await getPayPalAccessToken();
-    const latency = Date.now() - t0;
-    results.services.push({
-      id: 'paypal_oauth',
-      name: 'PayPal Sandbox OAuth 2.0 Service',
-      endpoint: 'https://api-m.sandbox.paypal.com/v1/oauth2/token',
-      status: 'operational',
-      latency: `${latency}ms`,
-      details: `Bearer token retrieved successfully (${token.slice(0, 10)}...)`
-    });
-  } catch (err) {
-    results.services.push({
-      id: 'paypal_oauth',
-      name: 'PayPal Sandbox OAuth 2.0 Service',
-      endpoint: 'https://api-m.sandbox.paypal.com/v1/oauth2/token',
-      status: 'error',
-      latency: 'timeout',
-      details: err.message
-    });
-  }
-
-  // 2. Check PayPal Orders API v2
-  results.services.push({
-    id: 'paypal_orders_v2',
-    name: 'PayPal Orders v2 Checkout Engine',
-    endpoint: 'https://api-m.sandbox.paypal.com/v2/checkout/orders',
-    status: 'operational',
-    latency: '84ms',
-    details: 'Supports order capture and intent generation.'
+  return NextResponse.json(results, {
+    headers: { "Cache-Control": "no-store" },
   });
-
-  // 3. Check Multi-Merchant Catalog Database
-  results.services.push({
-    id: 'catalog_db',
-    name: 'Multi-Merchant Product Database',
-    endpoint: 'local://catalog.json',
-    status: 'operational',
-    latency: '2ms',
-    details: `${catalog.length} items verified across 8 merchant records.`
-  });
-
-  // 4. Check AI Agent Decision Orchestrator
-  results.services.push({
-    id: 'agent_orchestrator',
-    name: 'SwiftCart Agentic Decision Engine',
-    endpoint: '/api/agent',
-    status: 'operational',
-    latency: '14ms',
-    details: 'Tool calling, constraint parsing, and scoring engine active.'
-  });
-
-  // 5. PayPal Webhooks Ingestion Listener
-  results.services.push({
-    id: 'paypal_webhooks',
-    name: 'PayPal Asynchronous Webhook Listener',
-    endpoint: '/api/webhooks/paypal',
-    status: 'operational',
-    latency: '3ms',
-    details: 'In-memory stream active. Supports PAYMENT.CAPTURE.COMPLETED & CHECKOUT.ORDER.APPROVED.'
-  });
-
-  // 6. Multi-Currency FX Engine
-  results.services.push({
-    id: 'fx_engine',
-    name: 'Multi-Currency & FX Engine',
-    endpoint: '/api/fx',
-    status: 'operational',
-    latency: '1ms',
-    details: '6 PayPal settlement currencies active: USD, EUR, GBP, CAD, AUD, JPY.'
-  });
-
-  // 7. Postman Collection Integration Status
-  results.services.push({
-    id: 'postman_spec',
-    name: 'Postman Collection Specification',
-    endpoint: 'postman://workspace/swiftcart-paypal-apis',
-    status: 'operational',
-    latency: '1ms',
-    details: 'Orders v2, Webhooks, and FX definitions verified.'
-  });
-
-  return NextResponse.json(results);
 }

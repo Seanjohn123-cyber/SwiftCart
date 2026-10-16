@@ -48,6 +48,7 @@ export async function createPayPalOrder({
   price = "49.99",
   currency = "USD",
   sku = "SKU-001",
+  customId,
 } = {}) {
   const accessToken = await getPayPalAccessToken();
 
@@ -56,6 +57,7 @@ export async function createPayPalOrder({
     purchase_units: [
       {
         reference_id: `REF-${Date.now()}`,
+        ...(customId ? { custom_id: customId } : {}),
         description: `Order via SwiftCart Agentic Checkout: ${name}`,
         amount: {
           currency_code: currency,
@@ -110,6 +112,25 @@ export async function createPayPalOrder({
   return orderData;
 }
 
+export async function getPayPalOrder(orderId) {
+  const accessToken = await getPayPalAccessToken();
+  const response = await fetch(
+    `${PAYPAL_API_BASE}/v2/checkout/orders/${encodeURIComponent(orderId)}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+
+  const orderData = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch PayPal order: ${JSON.stringify(orderData)}`,
+    );
+  }
+
+  return orderData;
+}
+
 /**
  * Capture a PayPal Order v2 once approved by buyer
  * @param {string} orderId - PayPal Order ID
@@ -125,6 +146,7 @@ export async function capturePayPalOrder(orderId) {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
+        "PayPal-Request-Id": `swiftcart-capture-${orderId}`,
       },
     },
   );

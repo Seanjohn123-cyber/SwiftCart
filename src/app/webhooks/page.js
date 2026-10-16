@@ -29,6 +29,10 @@ export default function WebhooksPage() {
     "PAYMENT.CAPTURE.COMPLETED",
   );
   const [copiedId, setCopiedId] = useState(null);
+  const [triageByEvent, setTriageByEvent] = useState({});
+  const [triagingId, setTriagingId] = useState(null);
+  const [lastSimulatedPayload, setLastSimulatedPayload] = useState(null);
+  const [simulationMessage, setSimulationMessage] = useState("");
 
   const fetchWebhooks = async () => {
     try {
@@ -45,13 +49,21 @@ export default function WebhooksPage() {
   };
 
   useEffect(() => {
-    fetchWebhooks();
-    const interval = setInterval(fetchWebhooks, 5000);
-    return () => clearInterval(interval);
+    const initialLoad = window.setTimeout(() => {
+      void fetchWebhooks();
+    }, 0);
+    const interval = window.setInterval(() => {
+      void fetchWebhooks();
+    }, 5000);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const handleSimulateWebhook = async () => {
     setSimulating(true);
+    setSimulationMessage("");
     try {
       const randomAmount = (Math.random() * 80 + 20).toFixed(2);
       const randomCaptureId =
@@ -103,7 +115,7 @@ export default function WebhooksPage() {
         };
       }
 
-      await fetch("/api/webhooks/paypal", {
+      const response = await fetch("/api/webhooks/paypal", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,12 +123,78 @@ export default function WebhooksPage() {
         },
         body: JSON.stringify(payload),
       });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Webhook simulation failed.");
+      }
 
+      setLastSimulatedPayload(payload);
+      setSimulationMessage("Test event dispatched and recorded.");
       await fetchWebhooks();
     } catch (err) {
       console.error("Simulation error:", err);
+      setSimulationMessage(err.message || "Webhook simulation failed.");
     } finally {
       setSimulating(false);
+    }
+  };
+
+  const handleReplayLastEvent = async () => {
+    if (!lastSimulatedPayload) return;
+
+    setSimulating(true);
+    setSimulationMessage("");
+    try {
+      const response = await fetch("/api/webhooks/paypal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-swiftcart-simulation": "true",
+        },
+        body: JSON.stringify(lastSimulatedPayload),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Webhook replay failed.");
+      }
+      setSimulationMessage(
+        result.duplicate
+          ? "Duplicate event correctly acknowledged; no second event was recorded."
+          : "Event replayed, but the server did not identify it as a duplicate.",
+      );
+      await fetchWebhooks();
+    } catch (err) {
+      console.error("Webhook replay error:", err);
+      setSimulationMessage(err.message || "Webhook replay failed.");
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  const handleTriageEvent = async (eventId) => {
+    setTriagingId(eventId);
+    setTriageByEvent((current) => ({
+      ...current,
+      [eventId]: null,
+    }));
+    try {
+      const response = await fetch("/api/webhooks/paypal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "triage", eventId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "AI triage failed.");
+      }
+      setTriageByEvent((current) => ({ ...current, [eventId]: data }));
+    } catch (error) {
+      setTriageByEvent((current) => ({
+        ...current,
+        [eventId]: { error: error.message },
+      }));
+    } finally {
+      setTriagingId(null);
     }
   };
 
@@ -187,6 +265,7 @@ export default function WebhooksPage() {
         </div>
 
         {/* Live Simulation Controls Bar */}
+        {process.env.NODE_ENV !== "production" && (
         <div className="rounded-3xl border border-amber-500/20 bg-gradient-to-r from-[#2a241f] via-[#221c18] to-[#1a1613] p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-300 flex items-center justify-center shrink-0">
@@ -233,8 +312,25 @@ export default function WebhooksPage() {
               />
               <span>{simulating ? "Emitting..." : "Dispatch Event"}</span>
             </button>
+            <button
+              type="button"
+              onClick={handleReplayLastEvent}
+              disabled={simulating || !lastSimulatedPayload}
+              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-stone-200 disabled:opacity-40"
+            >
+              Replay last event
+            </button>
           </div>
+          {simulationMessage && (
+            <p
+              className="w-full text-xs text-stone-200 md:text-right"
+              role="status"
+            >
+              {simulationMessage}
+            </p>
+          )}
         </div>
+        )}
 
         {/* Webhooks Stream Feed */}
         <div className="flex flex-col gap-4">
@@ -319,6 +415,51 @@ export default function WebhooksPage() {
                     {/* Expandable JSON Payload */}
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-white/10 text-xs">
+                        {evt.source === "PAYPAL_VERIFIED" && (
+                          <div className="mb-4 rounded-xl border border-violet-400/20 bg-violet-400/5 p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <span className="font-semibold text-violet-200">
+                                  AI event review
+                                </span>
+                                <p className="mt-1 text-[11px] text-stone-400">
+                                  Advisory only. It cannot approve or change a
+                                  payment.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleTriageEvent(evt.id)}
+                                disabled={triagingId === evt.id}
+                                className="rounded-full border border-violet-300/30 bg-violet-300/10 px-3 py-2 text-[11px] font-semibold text-violet-100 hover:bg-violet-300/20 disabled:opacity-50"
+                              >
+                                {triagingId === evt.id
+                                  ? "Reviewing…"
+                                  : "Review with AI"}
+                              </button>
+                            </div>
+                            {triageByEvent[evt.id]?.advisory && (
+                              <div className="mt-3 text-[11px] text-stone-200">
+                                <span className="font-semibold">
+                                  {triageByEvent[evt.id].advisory.attention.replaceAll(
+                                    "_",
+                                    " ",
+                                  )}
+                                  :
+                                </span>{" "}
+                                {triageByEvent[evt.id].advisory.summary}
+                                <span className="ml-2 text-stone-500">
+                                  ({triageByEvent[evt.id].model})
+                                </span>
+                              </div>
+                            )}
+                            {triageByEvent[evt.id]?.error && (
+                              <p className="mt-3 text-[11px] text-rose-300">
+                                {triageByEvent[evt.id].error}
+                              </p>
+                            )}
+                          </div>
+                        )}
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-stone-400 font-mono text-[11px]">
                             Event Resource JSON

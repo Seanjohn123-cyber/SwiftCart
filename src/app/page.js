@@ -62,6 +62,7 @@ function HomeContent() {
   ]);
   const [activeTab, setActiveTab] = useState("picks");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showComparisonMatrix, setShowComparisonMatrix] = useState(false);
@@ -409,9 +410,10 @@ function HomeContent() {
 
   const handleApprove = (item) => {
     setActiveItem(item);
+    setCheckoutError("");
     setShowMobileCheckoutSheet(true);
     addLog(
-      `Approved product selection: "${item.name}". Continue to PayPal to authorize payment.`,
+      `Added agent recommendation to the proposed cart: "${item.name}". Shopper approval is still required.`,
     );
   };
 
@@ -433,10 +435,7 @@ function HomeContent() {
       }}
       createOrder={async () => {
         setIsProcessing(true);
-        const convertedPrice = convertAmount(
-          activeItem.price,
-          selectedCurrency,
-        ).toString();
+        setCheckoutError("");
         addLog(
           `Creating PayPal Order for "${activeItem.name}" (${formatPrice(activeItem.price, selectedCurrency)} ${selectedCurrency})`,
         );
@@ -445,10 +444,8 @@ function HomeContent() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: activeItem.name,
-              price: convertedPrice,
+              productId: activeItem.id,
               currency: selectedCurrency,
-              sku: activeItem.sku,
             }),
           });
           const data = await res.json();
@@ -460,6 +457,7 @@ function HomeContent() {
           }
         } catch (err) {
           addLog(`Error: ${err.message}`);
+          setCheckoutError(err.message || "Could not create the PayPal order.");
           setIsProcessing(false);
           throw err;
         }
@@ -475,6 +473,8 @@ function HomeContent() {
             body: JSON.stringify({ orderId: data.orderID }),
           });
           const capture = await res.json();
+          if (!res.ok)
+            throw new Error(capture.error || "PayPal capture failed.");
           if (capture.status === "COMPLETED") {
             addLog(`Payment successfully captured. ID: ${capture.id}`);
             setAgentSteps((previous) => [
@@ -489,15 +489,26 @@ function HomeContent() {
             });
             setShowMobileCheckoutSheet(false);
             setShowReceiptModal(true);
+          } else {
+            throw new Error("PayPal did not confirm the capture.");
           }
         } catch (err) {
           addLog(`Capture Error: ${err.message}`);
+          setCheckoutError(err.message || "Payment could not be captured.");
         } finally {
           setIsProcessing(false);
         }
       }}
+      onCancel={() => {
+        addLog("PayPal checkout was cancelled before capture.");
+        setCheckoutError("Checkout cancelled. Your payment was not captured.");
+        setIsProcessing(false);
+      }}
       onError={(err) => {
         addLog(`SDK Error: ${err.toString()}`);
+        setCheckoutError(
+          "PayPal could not complete checkout. No capture was confirmed.",
+        );
         setIsProcessing(false);
       }}
     />
@@ -796,7 +807,7 @@ function HomeContent() {
                               : "border-[#687477] bg-white text-[#202627] hover:bg-[#eef3f3]"
                           }`}
                         >
-                          {index === 0 ? "Approve and pay" : "Approve"}
+                          {index === 0 ? "Add top pick to cart" : "Add to cart"}
                         </button>
                       </div>
                     </article>
@@ -1183,9 +1194,11 @@ function HomeContent() {
                     id="checkout-title"
                     className="text-base font-bold text-white"
                   >
-                    PayPal Instant Checkout
+                    Review proposed cart · 1 item
                   </h3>
-                  <p className="text-xs text-stone-400">{activeItem.name}</p>
+                  <p className="text-xs text-stone-400">
+                    {activeItem.name} · {activeItem.store}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -1203,6 +1216,15 @@ function HomeContent() {
                   {selectedCurrency}
                 </span>
               </div>
+
+              {checkoutError && (
+                <p
+                  role="alert"
+                  className="mb-3 rounded-lg bg-red-950/60 px-3 py-2 text-xs text-red-200"
+                >
+                  {checkoutError}
+                </p>
+              )}
 
               {paypalButtonsComponent}
             </div>

@@ -24,6 +24,7 @@ export default function CopilotPage() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [agentMode, setAgentMode] = useState("catalog_rules");
   const [error, setError] = useState("");
 
   const askCopilot = async (value = question) => {
@@ -46,6 +47,7 @@ export default function CopilotPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Catalog search failed");
+      setAgentMode(data.agentMode || "catalog_rules");
       const options = data.options || [];
       setMessages((current) => [
         ...current,
@@ -55,6 +57,7 @@ export default function CopilotPage() {
           text: options.length
             ? `I found ${data.totalResults ?? options.length} matching products and ranked the top options.`
             : "I couldn't find a match. Try changing the product, budget, or size.",
+          agentMode: data.agentMode || "catalog_rules",
           options,
         },
       ]);
@@ -102,7 +105,11 @@ export default function CopilotPage() {
                   SwiftCart Copilot
                 </h2>
                 <p className="mt-0.5 text-[11px] text-[#657276]">
-                  Catalog search is active · AI provider not connected
+                  {agentMode === "openai_tool_calling"
+                    ? "OpenAI tool planner active · prices validated from catalog"
+                    : agentMode === "catalog_rules_fallback"
+                      ? "Local rules fallback · AI planner unavailable"
+                      : "Local catalog planner · configure OPENAI_API_KEY for model tool calling"}
                 </p>
               </div>
             </div>
@@ -252,11 +259,13 @@ export default function CopilotPage() {
                 </span>
               </div>
               <h2 className="mt-3 text-base font-extrabold text-white">
-                Catalog search is connected
+                {agentMode === "openai_tool_calling"
+                  ? "OpenAI planner is active"
+                  : "Catalog planner is active"}
               </h2>
               <p className="mt-2 text-xs leading-relaxed text-[#d4dddd]">
-                Questions return ranked results from the local catalog.
-                Conversational AI is not connected yet.
+                The agent turns your request into catalog filters. The server
+                verifies stock and price before PayPal creates an order.
               </p>
             </section>
 

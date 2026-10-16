@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import fs from 'fs';
 import path from 'path';
+import { isAuthorizedMerchantImport } from '@/lib/merchant-import-auth';
 
 const CATALOG_PATH = path.join(process.cwd(), 'src', 'data', 'catalog.json');
 
@@ -20,8 +22,15 @@ const FALLBACK_PHOTOS = {
 };
 
 function getPhotoForProduct(item) {
-  if (item.image && item.image.startsWith('http')) {
-    return item.image;
+  if (item.image) {
+    try {
+      const imageUrl = new URL(item.image);
+      if (imageUrl.protocol === 'https:' && imageUrl.hostname === 'images.unsplash.com') {
+        return imageUrl.toString();
+      }
+    } catch {
+      // Use a category-based fallback for invalid image URLs.
+    }
   }
   const text = `${item.name} ${item.category || ''}`.toLowerCase();
   for (const [key, url] of Object.entries(FALLBACK_PHOTOS)) {
@@ -31,13 +40,48 @@ function getPhotoForProduct(item) {
 }
 
 export async function POST(req) {
+  if (!isAuthorizedMerchantImport(
+    process.env.MERCHANT_IMPORT_TOKEN,
+    req.headers.get('authorization')
+  )) {
+    return NextResponse.json(
+      { error: process.env.MERCHANT_IMPORT_TOKEN ? 'Merchant import is unauthorized.' : 'Merchant import is not configured.' },
+      { status: process.env.MERCHANT_IMPORT_TOKEN ? 401 : 503 }
+    );
+  }
+
   try {
-    const body = await req.json();
+    const contentLength = Number(req.headers.get('content-length') || 0);
+    if (contentLength > 1024 * 1024) {
+      return NextResponse.json({ error: 'Import payload exceeds the 1 MB limit.' }, { status: 413 });
+    }
+
+    const requestText = await req.text();
+    if (Buffer.byteLength(requestText, 'utf8') > 1024 * 1024) {
+      return NextResponse.json({ error: 'Import payload exceeds the 1 MB limit.' }, { status: 413 });
+    }
+
+    const body = JSON.parse(requestText);
     const { storeName, items } = body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
       return NextResponse.json(
-        { error: 'Invalid payload: items array is required.' },
+        { error: 'Provide between 1 and 100 inventory items.' },
+        { status: 400 }
+      );
+    }
+    if (storeName !== undefined && (typeof storeName !== 'string' || storeName.length > 100)) {
+      return NextResponse.json({ error: 'Store name must be 100 characters or fewer.' }, { status: 400 });
+    }
+    const invalidItem = items.find((raw) => {
+      const price = Number(raw?.price);
+      return !raw || typeof raw !== 'object' || Array.isArray(raw) ||
+        typeof raw.name !== 'string' || !raw.name.trim() || raw.name.length > 160 ||
+        !Number.isFinite(price) || price <= 0 || price > 100000;
+    });
+    if (invalidItem) {
+      return NextResponse.json(
+        { error: 'Every item must have a name and a valid price no greater than 100000.' },
         { status: 400 }
       );
     }
@@ -51,27 +95,42 @@ export async function POST(req) {
 
     // Format and ingest new items
     const ingested = items.map((raw, idx) => {
-      const price = parseFloat(raw.price) || 49.99;
-      const originalPrice = raw.originalPrice ? parseFloat(raw.originalPrice) : Math.round(price * 1.25 * 100) / 100;
+      const price = Number(raw.price);
+      const originalPrice = raw.originalPrice !== undefined
+        ? Number(raw.originalPrice)
+        : Math.round(price * 1.25 * 100) / 100;
+      if (!Number.isFinite(originalPrice) || originalPrice < price || originalPrice > 100000) {
+        throw new Error(`Invalid original price for "${raw.name}".`);
+      }
       const resolvedStore = raw.store || storeName || 'Partner Merchant';
 
       return {
-        id: raw.id || `PROD-EXT-${Date.now()}-${idx + 1}`,
-        name: raw.name || 'Unnamed Product',
-        category: raw.category || 'general',
+        id: typeof raw.id === 'string' && /^[A-Za-z0-9._:-]{1,100}$/.test(raw.id)
+          ? raw.id
+          : `PROD-EXT-${randomUUID()}-${idx + 1}`,
+        name: raw.name.trim(),
+        category: typeof raw.category === 'string' ? raw.category.slice(0, 40) : 'general',
         price: price,
         originalPrice: originalPrice,
         size: raw.size || 'Standard',
         color: raw.color || 'Default',
         rating: raw.rating || 4.7,
         reviewsCount: raw.reviewsCount || Math.floor(Math.random() * 800) + 120,
-        sku: raw.sku || `SKU-EXT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        inStock: true,
-        store: resolvedStore,
-        deliveryDays: raw.deliveryDays || '2-3 business days',
-        shippingCost: raw.shippingCost || 0.00,
-        returnPolicy: raw.returnPolicy || '30-Day Free Returns (PayPal Protected)',
-        description: raw.description || `Verified retail product from ${resolvedStore}.`,
+        sku: typeof raw.sku === 'string' && raw.sku.trim()
+          ? raw.sku.trim().slice(0, 80)
+          : `SKU-EXT-${randomUUID().slice(0, 8).toUpperCase()}`,
+        inStock: typeof raw.inStock === 'boolean' ? raw.inStock : true,
+        store: String(resolvedStore).slice(0, 100),
+        deliveryDays: typeof raw.deliveryDays === 'string' ? raw.deliveryDays.slice(0, 80) : '2-3 business days',
+        shippingCost: Number.isFinite(Number(raw.shippingCost)) && Number(raw.shippingCost) >= 0
+          ? Number(raw.shippingCost)
+          : 0,
+        returnPolicy: typeof raw.returnPolicy === 'string'
+          ? raw.returnPolicy.slice(0, 200)
+          : '30-Day Free Returns (PayPal Protected)',
+        description: typeof raw.description === 'string'
+          ? raw.description.slice(0, 1000)
+          : `Verified retail product from ${resolvedStore}.`,
         image: getPhotoForProduct(raw),
         merchantOffers: raw.merchantOffers || [
           { store: resolvedStore, price: price, shipping: 'Free Standard', status: 'Best Price', isWinner: true },
@@ -96,10 +155,14 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error('Merchant import error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Import request must contain valid JSON.' }, { status: 400 });
+    }
+    if (error.message.startsWith('Invalid original price')) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error('Merchant import error:', error);
+    return NextResponse.json({ error: 'Inventory import failed.' }, { status: 500 });
   }
 }
 
