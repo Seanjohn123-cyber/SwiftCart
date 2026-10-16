@@ -51,7 +51,10 @@ export async function GET(request) {
     const customer = await getCustomerById(customerId);
     return NextResponse.json(
       customer
-        ? { authenticated: true, customer: { email: customer.email } }
+        ? {
+            authenticated: true,
+            customer: { fullName: customer.full_name, email: customer.email },
+          }
         : { authenticated: false },
       { headers: { "Cache-Control": "no-store" } },
     );

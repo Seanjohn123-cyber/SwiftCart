@@ -570,7 +570,7 @@ function HomeContent() {
         />
 
         {/* Main Content Area */}
-        <main className="relative z-10 mx-auto w-full max-w-[1320px] flex-1 rounded-b-[24px] bg-[#eef3f3] px-4 py-5 sm:px-7 sm:py-8 md:px-10">
+        <main className="relative z-10 mx-auto w-full max-w-[1320px] flex-1 rounded-b-[24px] bg-[#eef3f3] px-4 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
           {registeredStoreName && (
             <div
               role="status"
@@ -668,10 +668,10 @@ function HomeContent() {
 
           <section
             id="shop"
-            className="mx-auto max-w-[1120px] pb-10 pt-5 sm:pt-8"
+            className="mx-auto max-w-[1120px] pb-10 pt-2 sm:pt-3.5"
           >
             <div className="mx-auto max-w-[700px] text-center">
-              <h1 className="text-[38px] font-black leading-[0.94] text-[#101315] sm:text-6xl md:text-[66px]">
+              <h1 className="text-[38px] font-black leading-[0.94] text-[#101315] sm:text-[56px] sm:leading-[0.86]">
                 SHOP BY
                 <br />
                 JUST ASKING.
@@ -682,7 +682,7 @@ function HomeContent() {
               </p>
               <form
                 onSubmit={handleAgentSearch}
-                className="mx-auto mt-5 flex max-w-[580px] flex-col gap-2 rounded-[28px] bg-white p-2 shadow-[0_12px_32px_rgba(39,57,59,0.14)] sm:flex-row sm:items-center sm:rounded-full sm:pl-5"
+                className="mx-auto mt-1 flex max-w-[580px] flex-col gap-2 rounded-[28px] bg-white p-1 shadow-[0_12px_32px_rgba(39,57,59,0.14)] sm:flex-row sm:items-center sm:rounded-full sm:pl-5"
               >
                 <div className="flex min-w-0 flex-1 items-center">
                   <input
@@ -691,7 +691,7 @@ function HomeContent() {
                     onChange={(event) => setSearchQuery(event.target.value)}
                     aria-label="Describe what you want to shop for"
                     placeholder="Blue running shoes under $80, size 10"
-                    className="min-w-0 flex-1 rounded-full bg-transparent px-3 py-3 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
+                    className="min-w-0 flex-1 rounded-full bg-transparent px-3 py-2 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
                   />
                   {searchQuery && (
                     <button
@@ -707,7 +707,7 @@ function HomeContent() {
                 <button
                   type="submit"
                   disabled={!searchQuery.trim() || isSearching}
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#111416] px-6 text-[12px] font-extrabold uppercase text-white transition hover:bg-[#293033] disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-2 rounded-full bg-[#111416] px-6 text-[12px] font-extrabold uppercase text-white transition hover:bg-[#293033] disabled:cursor-wait disabled:opacity-60"
                 >
                   <Search className="h-4 w-4" />
                   {isSearching ? "Searching" : "Find with agent"}
@@ -738,7 +738,7 @@ function HomeContent() {
               </div>
             </div>
 
-            <div id="orders" className="mt-8 sm:mt-9">
+            <div id="orders" className="mt-4">
               <div className="mb-2 flex items-end justify-between gap-4">
                 <h2 className="text-[17px] font-extrabold tracking-tight text-[#14191a]">
                   Top picks for you
@@ -750,17 +750,17 @@ function HomeContent() {
                 )}
               </div>
               {agentOptions.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {agentOptions.map((item, index) => (
                     <article
                       key={item.id}
-                      className={`overflow-hidden rounded-[17px] border bg-white p-2.5 transition-shadow ${
+                      className={`overflow-hidden rounded-[17px] border bg-white p-2 transition-shadow ${
                         index === 0
                           ? "border-[#184c3e] ring-1 ring-[#184c3e]"
                           : "border-white"
                       }`}
                     >
-                      <div className="relative aspect-[1.45/1] overflow-hidden rounded-[12px] bg-[#dbe7e8]">
+                      <div className="relative aspect-[1.9/1] overflow-hidden rounded-[12px] bg-[#dbe7e8]">
                         <Image
                           src={item.image}
                           alt={item.name}
@@ -781,16 +781,19 @@ function HomeContent() {
                           <Heart className="h-4 w-4" />
                         </span>
                       </div>
-                      <div className="px-0.5 pb-0.5 pt-2">
+                      <div className="px-0.5 pb-0.5 pt-1.5">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="min-w-0 text-[13px] font-extrabold leading-tight text-[#171c1d]">
+                          <h3 className="min-w-0 truncate text-[12px] font-extrabold leading-tight text-[#171c1d]">
                             {item.name}
                           </h3>
-                          <span className="shrink-0 text-[13px] font-extrabold text-[#171c1d]">
+                          <span className="shrink-0 text-[12px] font-extrabold text-[#171c1d]">
                             {formatPrice(item.price, selectedCurrency)}
                           </span>
                         </div>
-                        <p className="mt-1 min-h-8 text-[10px] leading-snug text-[#617078]">
+                        <p
+                          className="mt-1 truncate text-[10px] leading-snug text-[#617078]"
+                          title={item.agentReason}
+                        >
                           {item.agentReason}
                         </p>
                         <div className="mt-1 flex items-center gap-1 text-[10px] text-[#657174]">
@@ -805,7 +808,7 @@ function HomeContent() {
                         <button
                           type="button"
                           onClick={() => handleApprove(item)}
-                          className={`mt-2 inline-flex min-h-9 items-center justify-center rounded-full border px-4 text-[11px] font-bold transition ${
+                          className={`mt-1 inline-flex min-h-7 items-center justify-center rounded-full border px-4 text-[10px] font-bold transition ${
                             index === 0
                               ? "border-[#073e32] bg-[#073e32] text-white hover:bg-[#0b5746]"
                               : "border-[#687477] bg-white text-[#202627] hover:bg-[#eef3f3]"
@@ -824,6 +827,45 @@ function HomeContent() {
                     : "No products matched. Try a broader search above."}
                 </div>
               )}
+            </div>
+
+            <div className="mt-7">
+              <h2 className="mb-2 text-[17px] font-extrabold tracking-tight text-[#14191a]">
+                How it works
+              </h2>
+              <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {[
+                  {
+                    title: "Ask",
+                    description: "Say what you want in plain English.",
+                  },
+                  {
+                    title: "Approve",
+                    description: "Review the ranked picks and choose one.",
+                  },
+                  {
+                    title: "Pay",
+                    description: "PayPal completes checkout after your approval.",
+                  },
+                ].map((step, index) => (
+                  <li
+                    key={step.title}
+                    className="flex items-center gap-3 rounded-[15px] bg-white px-3.5 py-3"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#073e32] text-[11px] font-black text-white">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-extrabold text-[#172021]">
+                        {step.title}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] leading-snug text-[#617078]">
+                        {step.description}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </section>
 

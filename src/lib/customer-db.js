@@ -35,11 +35,14 @@ async function ensureCustomerSchema() {
       .query(`
         CREATE TABLE IF NOT EXISTS swiftcart_customers (
           id TEXT PRIMARY KEY,
+          full_name TEXT NOT NULL DEFAULT '',
           email TEXT NOT NULL UNIQUE,
           password_salt TEXT NOT NULL,
           password_hash TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        ALTER TABLE swiftcart_customers
+          ADD COLUMN IF NOT EXISTS full_name TEXT NOT NULL DEFAULT '';
         CREATE TABLE IF NOT EXISTS swiftcart_checkout_intents (
           idempotency_key TEXT PRIMARY KEY,
           paypal_order_id TEXT UNIQUE,
@@ -70,16 +73,22 @@ async function ensureCustomerSchema() {
   await schemaPromise;
 }
 
-export async function createCustomer({ email, passwordSalt, passwordHash }) {
+export async function createCustomer({
+  fullName,
+  email,
+  passwordSalt,
+  passwordHash,
+}) {
   await ensureCustomerSchema();
   const customer = {
     id: randomUUID(),
     email,
   };
   await getPool().query(
-    `INSERT INTO swiftcart_customers (id, email, password_salt, password_hash)
-     VALUES ($1, $2, $3, $4)`,
-    [customer.id, customer.email, passwordSalt, passwordHash],
+    `INSERT INTO swiftcart_customers
+       (id, full_name, email, password_salt, password_hash)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [customer.id, fullName, customer.email, passwordSalt, passwordHash],
   );
   return customer;
 }
@@ -87,7 +96,7 @@ export async function createCustomer({ email, passwordSalt, passwordHash }) {
 export async function getCustomerByEmail(email) {
   await ensureCustomerSchema();
   const result = await getPool().query(
-    `SELECT id, email, password_salt, password_hash
+    `SELECT id, full_name, email, password_salt, password_hash
      FROM swiftcart_customers
      WHERE email = $1`,
     [email],
@@ -98,7 +107,7 @@ export async function getCustomerByEmail(email) {
 export async function getCustomerById(id) {
   await ensureCustomerSchema();
   const result = await getPool().query(
-    "SELECT id, email FROM swiftcart_customers WHERE id = $1",
+    "SELECT id, full_name, email FROM swiftcart_customers WHERE id = $1",
     [id],
   );
   return result.rows[0] || null;

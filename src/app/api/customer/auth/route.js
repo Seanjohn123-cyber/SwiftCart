@@ -81,6 +81,8 @@ export async function POST(request) {
   }
 
   const mode = body?.mode;
+  const fullName =
+    typeof body?.fullName === "string" ? body.fullName.trim() : "";
   const email = normalizeCustomerEmail(body?.email);
   const password = body?.password;
   if (
@@ -88,13 +90,14 @@ export async function POST(request) {
     !isValidCustomerEmail(email) ||
     typeof password !== "string" ||
     password.length > 128 ||
-    (mode === "register" && password.length < 12)
+    (mode === "register" &&
+      (password.length < 12 || fullName.length < 2 || fullName.length > 120))
   ) {
     return NextResponse.json(
       {
         error:
           mode === "register"
-            ? "Enter a valid email and a password of at least 12 characters."
+            ? "Enter your name, a valid email, and a password of at least 12 characters."
             : "Enter a valid email and password.",
       },
       { status: 400 },
@@ -116,6 +119,7 @@ export async function POST(request) {
       const { salt, hash } = await hashCustomerPassword(password);
       try {
         customer = await createCustomer({
+          fullName,
           email,
           passwordSalt: salt,
           passwordHash: hash,
@@ -144,13 +148,14 @@ export async function POST(request) {
       }
       customer = {
         id: existingCustomer.id,
+        fullName: existingCustomer.full_name,
         email: existingCustomer.email,
       };
     }
 
     const response = NextResponse.json({
       authenticated: true,
-      customer: { email: customer.email },
+      customer: { fullName: customer.fullName, email: customer.email },
     });
     response.cookies.set(
       CUSTOMER_SESSION_COOKIE,
