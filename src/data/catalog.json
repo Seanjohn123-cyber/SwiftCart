@@ -107,7 +107,7 @@
   {
     "id": "PROD-EXT-1791825781653-2",
     "name": "Carbon Fiber Running Insole Inserts",
-    "category": "shoes",
+    "category": "accessories",
     "price": 34.99,
     "originalPrice": 49.99,
     "size": "Size 10-11",
@@ -212,7 +212,7 @@
   {
     "id": "PROD-EXT-1791825780697-2",
     "name": "Carbon Fiber Running Insole Inserts",
-    "category": "shoes",
+    "category": "accessories",
     "price": 34.99,
     "originalPrice": 49.99,
     "size": "Size 10-11",
@@ -317,7 +317,7 @@
   {
     "id": "PROD-EXT-1791825779360-2",
     "name": "Carbon Fiber Running Insole Inserts",
-    "category": "shoes",
+    "category": "accessories",
     "price": 34.99,
     "originalPrice": 49.99,
     "size": "Size 10-11",
@@ -492,7 +492,7 @@
     "shippingCost": 0,
     "returnPolicy": "60-Day Guarantee",
     "description": "4D GUIDANCE SYSTEM for adaptive stability and PureGEL rearfoot technology.",
-    "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80",
+    "image": "https://images.asics.com/is/image/asics/1011B548_402_SR_RT_GLB?$sfcc-product$",
     "merchantOffers": [
       {
         "store": "RunningWarehouse",

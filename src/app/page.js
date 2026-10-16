@@ -50,7 +50,7 @@ import {
   subscribeRegistrationNotice,
 } from "@/lib/registration-notice";
 
-const DEFAULT_SEARCH_QUERY = "Blue running shoes under $80, size 10";
+const DEFAULT_SEARCH_QUERY = "Best value running shoes under $80, size 10";
 
 function HomeContent() {
   const [items, setItems] = useState(catalogData);
@@ -570,7 +570,7 @@ function HomeContent() {
         />
 
         {/* Main Content Area */}
-        <main className="relative z-10 mx-auto w-full max-w-[1320px] flex-1 rounded-b-[24px] bg-[#eef3f3] px-4 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
+        <main className="relative z-10 mx-auto w-full max-w-[1320px] rounded-b-[24px] bg-[#eef3f3] px-4 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
           {registeredStoreName && (
             <div
               role="status"
@@ -690,7 +690,7 @@ function HomeContent() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     aria-label="Describe what you want to shop for"
-                    placeholder="Blue running shoes under $80, size 10"
+                    placeholder="Best value running shoes under $80, size 10"
                     className="min-w-0 flex-1 rounded-full bg-transparent px-3 py-2 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
                   />
                   {searchQuery && (
@@ -750,7 +750,7 @@ function HomeContent() {
                 )}
               </div>
               {agentOptions.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {agentOptions.map((item, index) => (
                     <article
                       key={item.id}
@@ -790,13 +790,10 @@ function HomeContent() {
                             {formatPrice(item.price, selectedCurrency)}
                           </span>
                         </div>
-                        <p
-                          className="mt-1 truncate text-[10px] leading-snug text-[#617078]"
-                          title={item.agentReason}
-                        >
+                        <p className="mt-1 min-h-8 text-[11px] leading-4 text-[#617078]">
                           {item.agentReason}
                         </p>
-                        <div className="mt-1 flex items-center gap-1 text-[10px] text-[#657174]">
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-[#657174]">
                           <span className="font-bold tracking-[0.06em] text-emerald-700">
                             ★★★★★
                           </span>
@@ -814,7 +811,9 @@ function HomeContent() {
                               : "border-[#687477] bg-white text-[#202627] hover:bg-[#eef3f3]"
                           }`}
                         >
-                          {index === 0 ? "Add top pick to cart" : "Add to cart"}
+                          {index === 0
+                            ? "Approve and pay with PayPal"
+                            : "Approve"}
                         </button>
                       </div>
                     </article>
