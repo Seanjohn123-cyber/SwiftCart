@@ -617,17 +617,6 @@ function HomeContent() {
                   Real-time cross-merchant price arbitration, foreign exchange
                   settlement, and 1-click PayPal Orders v2 execution.
                 </p>
-                <p className="mt-2 text-xs text-stone-300">
-                  {paymentSuccess.purchaseHistoryMessage}
-                </p>
-                {paymentSuccess.purchaseHistorySaved && (
-                  <Link
-                    href="/account"
-                    className="mt-1 inline-block text-xs font-bold text-emerald-300 underline underline-offset-2"
-                  >
-                    View purchase history
-                  </Link>
-                )}
               </div>
 
               {/* Natural Language Prompt Search Bar */}
@@ -1088,6 +1077,17 @@ function HomeContent() {
                             {paymentSuccess.paidCurrency || selectedCurrency}
                           </strong>
                         </p>
+                        <p className="mt-2 text-xs text-stone-300">
+                          {paymentSuccess.purchaseHistoryMessage}
+                        </p>
+                        {paymentSuccess.purchaseHistorySaved && (
+                          <Link
+                            href="/account"
+                            className="mt-1 inline-block text-xs font-bold text-emerald-300 underline underline-offset-2"
+                          >
+                            View purchase history
+                          </Link>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-center gap-2 pt-2">
