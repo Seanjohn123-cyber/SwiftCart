@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { flattenCatalog } from "@/lib/catalog-shapes";
 
 const PRESET_FEEDS = {
   urban: [
@@ -95,6 +96,7 @@ function MerchantPortalContent() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [catalogCount, setCatalogCount] = useState(0);
   const [catalogItems, setCatalogItems] = useState([]);
+  const catalogVariants = flattenCatalog(catalogItems);
   const [loading, setLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState(null);
@@ -523,7 +525,7 @@ function MerchantPortalContent() {
               <p className="mt-1 text-xs text-[#596669]">
                 {loading
                   ? "Loading listingsâ€¦"
-                  : `${catalogItems.length} listings in the catalog`}
+                  : `${catalogItems.length} products · ${catalogVariants.length} variants`}
               </p>
             </div>
             <button
@@ -535,12 +537,13 @@ function MerchantPortalContent() {
               Add products
             </button>
           </div>
-          {catalogItems.length > 0 ? (
+          {catalogVariants.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e8eeee]">
                     <th className="px-2 py-3">Product</th>
+                    <th className="px-2 py-3">Color / size</th>
                     <th className="px-2 py-3">SKU</th>
                     <th className="px-2 py-3">Price</th>
                     <th className="px-2 py-3">Merchant</th>
@@ -548,12 +551,15 @@ function MerchantPortalContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {catalogItems.map((item) => (
+                  {catalogVariants.map((item) => (
                     <tr
-                      key={item.id}
+                      key={item.sku}
                       className="border-b border-[#edf1f1] last:border-0"
                     >
                       <td className="px-2 py-3 font-bold">{item.name}</td>
+                      <td className="px-2 py-3 capitalize">
+                        {item.color} / {item.size}
+                      </td>
                       <td className="px-2 py-3 font-mono text-[11px]">
                         {item.sku}
                       </td>
@@ -948,7 +954,8 @@ function MerchantPortalContent() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#2c2e2f]">
-            Live Ingested Inventory Stream ({catalogItems.length} Products)
+            Live Inventory Stream ({catalogItems.length} Products ·{" "}
+            {catalogVariants.length} Variants)
           </h2>
           <Link
             href="/"
@@ -960,9 +967,9 @@ function MerchantPortalContent() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {catalogItems.slice(0, 6).map((item) => (
+          {catalogVariants.slice(0, 6).map((item) => (
             <div
-              key={item.id}
+              key={item.sku}
               className="bg-white border border-[#e3e8ee] rounded-2xl p-4 flex flex-col justify-between gap-3"
             >
               <div className="relative w-full h-32 rounded-xl overflow-hidden bg-[#f5f7fa] border border-[#e3e8ee]">
@@ -974,7 +981,7 @@ function MerchantPortalContent() {
                   className="object-cover"
                 />
                 <div className="absolute top-2 right-2 rounded bg-white px-2 py-0.5 text-[10px] font-bold text-[#001c64] shadow-sm">
-                  ${item.price.toFixed(2)}
+                  {item.currency} {item.price.toFixed(2)}
                 </div>
               </div>
 
@@ -986,7 +993,7 @@ function MerchantPortalContent() {
                   {item.name}
                 </h3>
                 <p className="text-[11px] text-[#545d68] mt-1 line-clamp-2">
-                  {item.description}
+                  {item.color} · size {item.size} · {item.stock} in stock
                 </p>
               </div>
             </div>

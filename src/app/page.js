@@ -49,19 +49,31 @@ import {
   getRegistrationNotice,
   subscribeRegistrationNotice,
 } from "@/lib/registration-notice";
+import { flattenCatalogVariant } from "@/lib/catalog-shapes";
 
-const DEFAULT_SEARCH_QUERY = "Best value running shoes under $80, size 10";
+const DEFAULT_SEARCH_QUERY = "Cheapest blue running shoes under $80, size 10";
+
+const initialProduct =
+  catalogData.find((product) => product.id === "nike-air-zoom-pegasus-40") ||
+  catalogData[0];
+const initialVariant =
+  initialProduct.variants.find((variant) => variant.stock > 0) ||
+  initialProduct.variants[0];
 
 function HomeContent() {
   const [items, setItems] = useState(catalogData);
-  const [activeItem, setActiveItem] = useState(
-    catalogData.find((item) => item.id === "PROD-001") || catalogData[0],
+  const [activeItem, setActiveItem] = useState(() =>
+    flattenCatalogVariant(initialProduct, initialVariant),
   );
   const [agentOptions, setAgentOptions] = useState([]);
+  const [isChatSending, setIsChatSending] = useState(false);
   const [agentSteps, setAgentSteps] = useState([
     { label: "Searching catalog", status: "active" },
   ]);
   const [activeTab, setActiveTab] = useState("picks");
+  const [catalogFilter, setCatalogFilter] = useState("all");
+  const [catalogVisible, setCatalogVisible] = useState(8);
+  const [selectedVariants, setSelectedVariants] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(null);
@@ -100,7 +112,7 @@ function HomeContent() {
   const [chatMessages, setChatMessages] = useState([
     {
       sender: "agent",
-      text: "SwiftCart Autonomous Agent ready. I arbitrate prices across connected merchants, convert settlement currencies, and execute PayPal Checkout. How can I assist you?",
+      text: "SwiftCart Agent ready. I search real product variants by color, size, price, and stock, then prepare a cart for your approval before PayPal checkout.",
       tool: 'agent.initialize({ engine: "Orders_v2" })',
       timestamp: "Just now",
     },
@@ -257,9 +269,9 @@ function HomeContent() {
     }
   };
 
-  const handleSendCopilotMessage = (customText) => {
+  const handleSendCopilotMessage = async (customText) => {
     const text = customText || chatInput;
-    if (!text.trim()) return;
+    if (!text.trim() || isChatSending) return;
 
     const userMsg = {
       sender: "user",
@@ -274,103 +286,90 @@ function HomeContent() {
     setChatInput("");
     addLog(`User dialogue: "${text}"`);
 
-    setTimeout(() => {
-      const lower = text.toLowerCase();
-      let responseText = "";
-      let toolInvoked = "";
-      let targetProduct = activeItem;
+    setIsChatSending(true);
+    setSearchQuery(text);
+    setIsSearching(true);
+    setAgentSteps([{ label: "Searching catalog", status: "active" }]);
 
-      if (
-        lower.includes("cheapest") ||
-        lower.includes("budget") ||
-        lower.includes("under 70")
-      ) {
-        targetProduct = items.find((i) => i.id === "PROD-002") || items[1];
-        setActiveItem(targetProduct);
-        toolInvoked = 'catalog.filter({ maxPrice: 70, sort: "price_asc" })';
-        responseText = `Switched selection to ${targetProduct.name} at ${formatPrice(targetProduct.price, selectedCurrency)}. Lowest unit price across verified merchants with free shipping.`;
-      } else if (
-        lower.includes("stability") ||
-        lower.includes("support") ||
-        lower.includes("arch") ||
-        lower.includes("asics")
-      ) {
-        targetProduct = items.find((i) => i.id === "PROD-003") || items[2];
-        setActiveItem(targetProduct);
-        toolInvoked = 'catalog.match({ tags: ["Adaptive Arch Support"] })';
-        responseText = `Switched selection to ${targetProduct.name} at ${formatPrice(targetProduct.price, selectedCurrency)}. Top-rated for motion control and orthotic arch support.`;
-      } else if (
-        lower.includes("audio") ||
-        lower.includes("headphone") ||
-        lower.includes("sony") ||
-        lower.includes("noise")
-      ) {
-        targetProduct = items.find((i) => i.id === "PROD-004") || items[3];
-        setActiveItem(targetProduct);
-        toolInvoked = 'catalog.filter({ category: "audio" })';
-        responseText = `Switched category to ${targetProduct.name} at ${formatPrice(targetProduct.price, selectedCurrency)}. Features premium 30-hour ANC at Best Buy Direct.`;
-      } else if (
-        lower.includes("compare") ||
-        lower.includes("quotes") ||
-        lower.includes("matrix")
-      ) {
-        setShowComparisonMatrix(true);
-        toolInvoked = 'merchants.arbitrate({ sku: "' + activeItem.sku + '" })';
-        responseText = `Opening the Multi-Store Price Comparison Matrix for ${activeItem.name}. Nike Direct is currently the lowest verified quote.`;
-      } else if (lower.includes("shipping") || lower.includes("delivery")) {
-        setActiveTab("delivery");
-        toolInvoked = 'shipping.estimate({ zip: "US_STANDARD" })';
-        responseText = `Estimated delivery for ${activeItem.name} is ${activeItem.deliveryDays} with free shipping ($0.00) via ${activeItem.store}.`;
-      } else if (lower.includes("euro") || lower.includes("eur")) {
-        setSelectedCurrency("EUR");
-        toolInvoked = 'fx.convert({ base: "USD", target: "EUR" })';
-        responseText = `Switched shopping currency to EUR (€). Current item ${activeItem.name} converts to ${formatPrice(activeItem.price, "EUR")} EUR with instant PayPal settlement.`;
-      } else if (lower.includes("pound") || lower.includes("gbp")) {
-        setSelectedCurrency("GBP");
-        toolInvoked = 'fx.convert({ base: "USD", target: "GBP" })';
-        responseText = `Switched shopping currency to GBP (£). Current item ${activeItem.name} converts to ${formatPrice(activeItem.price, "GBP")} GBP with instant PayPal settlement.`;
-      } else if (lower.includes("yen") || lower.includes("jpy")) {
-        setSelectedCurrency("JPY");
-        toolInvoked = 'fx.convert({ base: "USD", target: "JPY" })';
-        responseText = `Switched shopping currency to JPY (¥). Current item ${activeItem.name} converts to ${formatPrice(activeItem.price, "JPY")} JPY with instant PayPal settlement.`;
-      } else if (lower.includes("cad") || lower.includes("canadian")) {
-        setSelectedCurrency("CAD");
-        toolInvoked = 'fx.convert({ base: "USD", target: "CAD" })';
-        responseText = `Switched shopping currency to CAD (C$). Current item ${activeItem.name} converts to ${formatPrice(activeItem.price, "CAD")} CAD with instant PayPal settlement.`;
-      } else if (lower.includes("aud") || lower.includes("australian")) {
-        setSelectedCurrency("AUD");
-        toolInvoked = 'fx.convert({ base: "USD", target: "AUD" })';
-        responseText = `Switched shopping currency to AUD (A$). Current item ${activeItem.name} converts to ${formatPrice(activeItem.price, "AUD")} AUD with instant PayPal settlement.`;
-      } else if (lower.includes("usd") || lower.includes("dollar")) {
-        setSelectedCurrency("USD");
-        toolInvoked = 'fx.convert({ base: "USD", target: "USD" })';
-        responseText = `Switched shopping currency to USD ($). Current item ${activeItem.name} is ${formatPrice(activeItem.price, "USD")} USD with instant PayPal settlement.`;
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Agent search failed.");
+
+      const options = data.options || [];
+      setAgentOptions(options);
+      if (options.length) {
+        const recommendation = options[0];
+        setActiveItem(recommendation);
+        setAgentSteps([
+          { label: "Searched catalog", status: "complete" },
+          {
+            label: `Ranked ${data.totalResults ?? options.length} variants`,
+            status: "complete",
+          },
+          { label: "Awaiting your approval", status: "active" },
+        ]);
+        setChatMessages((previous) => [
+          ...previous,
+          {
+            sender: "agent",
+            text: `Found ${data.totalResults ?? options.length} matching variants. Recommended ${recommendation.name}, ${recommendation.color}, size ${recommendation.size}, at ${formatPrice(recommendation.price, recommendation.currency)}. Please review and approve before checkout.`,
+            tool: "search_catalog({ filters: color, size, price, stock })",
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
       } else {
-        targetProduct = items[0];
-        setActiveItem(targetProduct);
-        toolInvoked = 'catalog.search({ query: "' + text + '" })';
-        responseText = `Evaluated candidate items for your request. Locking recommended selection on ${targetProduct.name} (${formatPrice(targetProduct.price, selectedCurrency)}) based on price and customer rating score.`;
+        setAgentSteps([
+          { label: "Searched catalog", status: "complete" },
+          { label: "No matching products", status: "active" },
+        ]);
+        setChatMessages((previous) => [
+          ...previous,
+          {
+            sender: "agent",
+            text: "I couldn't find an in-stock catalog variant matching those requirements. Try changing the color, size, or budget.",
+            tool: "search_catalog({ filters: color, size, price, stock })",
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
       }
-
-      addLog(`Copilot: Executed tool ${toolInvoked}`);
-      setChatMessages((prev) => [
-        ...prev,
+      addLog(`Agent searched catalog for: "${text}"`);
+    } catch (error) {
+      addLog(`Agent search failed: ${error.message}`);
+      setAgentOptions([]);
+      setAgentSteps([{ label: "Catalog search failed", status: "active" }]);
+      setChatMessages((previous) => [
+        ...previous,
         {
           sender: "agent",
-          text: responseText,
-          tool: toolInvoked,
+          text: `I couldn't complete that catalog search: ${error.message}`,
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
         },
       ]);
-    }, 500);
+    } finally {
+      setIsChatSending(false);
+      setIsSearching(false);
+    }
   };
 
-  const handleAgentSearch = async (e) => {
-    if (e) e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const handleAgentSearch = async (e, requestedQuery = searchQuery) => {
+    e?.preventDefault();
+    const prompt = requestedQuery.trim();
+    if (!prompt) return;
+    if (prompt !== searchQuery) setSearchQuery(prompt);
 
     setIsSearching(true);
     setAgentSteps([{ label: "Searching catalog", status: "active" }]);
@@ -378,7 +377,7 @@ function HomeContent() {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: searchQuery }),
+        body: JSON.stringify({ prompt }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Agent search failed");
@@ -400,6 +399,9 @@ function HomeContent() {
           { label: "No matching products", status: "active" },
         ]);
       }
+      document
+        .getElementById("agent-search")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
       addLog(`Query error: ${err.message}`);
       setAgentOptions([]);
@@ -408,6 +410,36 @@ function HomeContent() {
       setIsSearching(false);
     }
   };
+
+  const catalogFilters = [
+    { id: "all", label: "All" },
+    { id: "running", label: "Running" },
+    { id: "casual", label: "Casual" },
+    { id: "under80", label: "Under $80" },
+    { id: "blue", label: "Blue" },
+  ];
+  const matchesCatalogFilter = (product, variant) => {
+    const category = String(product.category || "").toLowerCase();
+    if (catalogFilter === "running") {
+      return category === "running" || category === "shoes";
+    }
+    if (catalogFilter === "casual") return category === "casual";
+    if (catalogFilter === "under80") return variant.priceMinor < 8000;
+    if (catalogFilter === "blue") {
+      return /blue|navy|midnight blue/i.test(String(variant.color || ""));
+    }
+    return true;
+  };
+  const filteredCatalog = items.filter((product) => {
+    return product.variants.some((variant) =>
+      matchesCatalogFilter(product, variant),
+    );
+  });
+  const catalogPicks = items.map((product) => {
+    const variant =
+      product.variants.find((item) => item.stock > 0) || product.variants[0];
+    return flattenCatalogVariant(product, variant);
+  });
 
   const handleApprove = (item) => {
     setActiveItem(item);
@@ -420,13 +452,13 @@ function HomeContent() {
 
   const initialPayPalOptions = {
     clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
-    currency: selectedCurrency,
+    currency: activeItem.currency || "USD",
     intent: "capture",
   };
 
   const paypalButtonsComponent = (
     <PayPalButtons
-      key={selectedCurrency + "-" + activeItem.id}
+      key={(activeItem.currency || "USD") + "-" + activeItem.sku}
       style={{
         layout: "vertical",
         color: "gold",
@@ -438,7 +470,7 @@ function HomeContent() {
         setIsProcessing(true);
         setCheckoutError("");
         addLog(
-          `Creating PayPal Order for "${activeItem.name}" (${formatPrice(activeItem.price, selectedCurrency)} ${selectedCurrency})`,
+          `Creating PayPal Order for "${activeItem.name}" (${formatPrice(activeItem.price, activeItem.currency)} ${activeItem.currency})`,
         );
         try {
           const res = await fetch("/api/orders/create", {
@@ -448,13 +480,13 @@ function HomeContent() {
               "Idempotency-Key": crypto.randomUUID(),
             },
             body: JSON.stringify({
-              productId: activeItem.id,
-              currency: selectedCurrency,
+              sku: activeItem.sku,
+              qty: 1,
             }),
           });
           const data = await res.json();
           if (data.id) {
-            addLog(`PayPal Order generated: ${data.id} (${selectedCurrency})`);
+            addLog(`PayPal Order generated: ${data.id} (${data.currency})`);
             return data.id;
           } else {
             throw new Error(data.error || "Failed to create order");
@@ -468,7 +500,7 @@ function HomeContent() {
       }}
       onApprove={async (data) => {
         addLog(
-          `Order approved by user: ${data.orderID}. Capturing payment in ${selectedCurrency}...`,
+          `Order approved by user: ${data.orderID}. Capturing payment in ${activeItem.currency}...`,
         );
         try {
           const res = await fetch("/api/orders/capture", {
@@ -488,8 +520,8 @@ function HomeContent() {
             setPaymentSuccess({
               ...capture,
               item: activeItem,
-              paidPrice: formatPrice(activeItem.price, selectedCurrency),
-              paidCurrency: selectedCurrency,
+              paidPrice: formatPrice(activeItem.price, activeItem.currency),
+              paidCurrency: activeItem.currency,
             });
             setShowMobileCheckoutSheet(false);
             setShowReceiptModal(true);
@@ -519,7 +551,10 @@ function HomeContent() {
   );
 
   return (
-    <PayPalScriptProvider key={selectedCurrency} options={initialPayPalOptions}>
+    <PayPalScriptProvider
+      key={activeItem.currency || "USD"}
+      options={initialPayPalOptions}
+    >
       <div className="shop-page-shell flex min-h-screen flex-col bg-[#c3d0d1] px-2 py-2 text-[#111416] antialiased selection:bg-lime-300 selection:text-black sm:px-4 sm:py-4">
         {/* Ambient Warm Radial Backlight Glows */}
         <div className="hidden" />
@@ -540,7 +575,8 @@ function HomeContent() {
                       `FX Engine: Currency switched to ${next} (${SUPPORTED_CURRENCIES[next].name})`,
                     );
                   }}
-                  aria-label="Select currency"
+                  aria-label="Display currency. PayPal charges in the product's catalog currency."
+                  title="Display currency; PayPal checkout uses the product's catalog currency."
                   className="cursor-pointer bg-transparent text-xs font-bold text-amber-200 outline-none"
                 >
                   {Object.values(SUPPORTED_CURRENCIES).map((c) => (
@@ -570,7 +606,7 @@ function HomeContent() {
         />
 
         {/* Main Content Area */}
-        <main className="relative z-10 mx-auto w-full max-w-[1320px] rounded-b-[24px] bg-[#eef3f3] px-3 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
+        <main className="relative z-10 mx-auto w-full max-w-[1320px] rounded-b-[24px] bg-[#eef3f3] px-3 pb-28 pt-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
           {registeredStoreName && (
             <div
               role="status"
@@ -630,7 +666,7 @@ function HomeContent() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="E.g. blue shoes under $70, size 10"
+                    placeholder="E.g. blue running shoes under $80, size 10"
                     className="min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm text-stone-100 placeholder-stone-500 outline-none"
                   />
                   <button
@@ -693,7 +729,7 @@ function HomeContent() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     aria-label="Describe what you want to shop for"
-                    placeholder="Best value running shoes under $80, size 10"
+                    placeholder="Cheapest blue running shoes under $80, size 10"
                     className="min-w-0 flex-1 rounded-full bg-transparent px-2 py-2 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
                   />
                   {searchQuery && (
@@ -766,7 +802,7 @@ function HomeContent() {
                       <div className="relative aspect-[1.9/1] overflow-hidden rounded-[12px] bg-[#dbe7e8]">
                         <Image
                           src={item.image}
-                          alt={item.name}
+                          alt={`${item.color} ${item.name}, size ${item.size}`}
                           fill
                           priority={index === 0}
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -774,7 +810,9 @@ function HomeContent() {
                         />
                         {index === 0 && (
                           <span className="absolute left-2.5 top-2.5 rounded-full bg-lime-300 px-2.5 py-1 text-[9px] font-black uppercase text-[#14191a]">
-                            Best match
+                            {item.agentReason?.startsWith("Lowest-priced")
+                              ? "Cheapest match"
+                              : "Best match"}
                           </span>
                         )}
                         <span
@@ -796,6 +834,9 @@ function HomeContent() {
                         <p className="mt-1 min-h-8 text-[11px] leading-4 text-[#617078]">
                           {item.agentReason}
                         </p>
+                        <p className="mt-1 truncate text-[9px] font-semibold capitalize text-[#536164]">
+                          {item.color} · size {item.size} · SKU {item.sku}
+                        </p>
                         <div className="mt-1 flex items-center gap-1 text-[11px] text-[#657174]">
                           <span className="font-bold tracking-[0.06em] text-emerald-700">
                             ★★★★★
@@ -803,6 +844,9 @@ function HomeContent() {
                           <span>
                             {item.rating} (
                             {Number(item.reviewsCount).toLocaleString()})
+                          </span>
+                          <span className="text-[9px] uppercase tracking-wide">
+                            demo
                           </span>
                         </div>
                         <button
@@ -869,6 +913,180 @@ function HomeContent() {
                 ))}
               </ol>
             </div>
+
+            <section
+              aria-labelledby="browse-catalog-heading"
+              className="mt-10 border-t border-[#d8e1e2] pt-7"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#637174]">
+                    Demo catalog · {items.length} products
+                  </p>
+                  <h2
+                    id="browse-catalog-heading"
+                    className="mt-1 text-xl font-extrabold tracking-tight text-[#14191a]"
+                  >
+                    Browse the catalog
+                  </h2>
+                </div>
+                <p className="text-[10px] leading-4 text-[#657174]">
+                  Demo prices, stock, ratings, and review counts. Shoe photos
+                  are from{" "}
+                  <a
+                    href="https://unsplash.com/license"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Unsplash
+                  </a>
+                  .
+                </p>
+              </div>
+
+              <div
+                className="mt-4 flex gap-2 overflow-x-auto pb-1"
+                aria-label="Catalog filters"
+              >
+                {catalogFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    aria-pressed={catalogFilter === filter.id}
+                    onClick={() => {
+                      setCatalogFilter(filter.id);
+                      setCatalogVisible(8);
+                    }}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650] ${
+                      catalogFilter === filter.id
+                        ? "border-[#073e32] bg-[#073e32] text-white"
+                        : "border-[#cbd6d8] bg-white text-[#344144] hover:border-[#073e32]"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 sm:gap-4">
+                {filteredCatalog.slice(0, catalogVisible).map((product) => {
+                  const matchingVariants = product.variants.filter((variant) =>
+                    matchesCatalogFilter(product, variant),
+                  );
+                  const selectedSku = selectedVariants[product.id];
+                  const selectedVariant =
+                    matchingVariants.find(
+                      (variant) => variant.sku === selectedSku,
+                    ) ||
+                    matchingVariants.find((variant) => variant.stock > 0) ||
+                    matchingVariants[0];
+                  const displayItem = flattenCatalogVariant(
+                    product,
+                    selectedVariant,
+                  );
+                  const categoryLabel =
+                    product.category === "running"
+                      ? "running shoes"
+                      : product.category === "casual"
+                        ? "casual shoes"
+                        : product.category;
+                  const productPrompt = `Find the ${selectedVariant.color} ${categoryLabel} ${product.name}${
+                    selectedVariant.size != null
+                      ? ` in size ${selectedVariant.size}`
+                      : ""
+                  }`;
+
+                  return (
+                    <article
+                      key={product.id}
+                      className="overflow-hidden rounded-[17px] border border-[#e1e8e9] bg-white p-2"
+                    >
+                      <div className="relative aspect-[1.55/1] overflow-hidden rounded-[12px] bg-[#dbe7e8]">
+                        <Image
+                          src={displayItem.image}
+                          alt={`${selectedVariant.color} ${product.name}, size ${selectedVariant.size}`}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover"
+                        />
+                        <span
+                          className={`absolute left-2 top-2 rounded-full px-2 py-1 text-[8px] font-bold uppercase ${
+                            selectedVariant.stock > 0
+                              ? "bg-white/95 text-[#245440]"
+                              : "bg-[#293234] text-white"
+                          }`}
+                        >
+                          {selectedVariant.stock > 0
+                            ? `${selectedVariant.stock} in stock`
+                            : "Out of stock"}
+                        </span>
+                      </div>
+                      <div className="px-0.5 pb-0.5 pt-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="min-w-0 text-[12px] font-extrabold leading-snug text-[#171c1d]">
+                            {product.name}
+                          </h3>
+                          <span className="shrink-0 text-[11px] font-extrabold text-[#171c1d]">
+                            {formatPrice(displayItem.price, selectedCurrency)}
+                          </span>
+                        </div>
+                        <label className="mt-2 block text-[9px] font-semibold text-[#526064]">
+                          Color and size
+                          <select
+                            value={selectedVariant.sku}
+                            onChange={(event) =>
+                              setSelectedVariants((previous) => ({
+                                ...previous,
+                                [product.id]: event.target.value,
+                              }))
+                            }
+                            className="mt-1 min-h-9 w-full rounded-lg border border-[#d7e0e1] bg-white px-2 text-[10px] text-[#273133] focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                          >
+                            {matchingVariants.map((variant) => (
+                              <option key={variant.sku} value={variant.sku}>
+                                {variant.color} · size {variant.size} · $
+                                {(variant.priceMinor / 100).toFixed(2)}
+                                {variant.stock === 0 ? " · sold out" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <p className="mt-1 text-[9px] text-[#657174]">
+                          {product.category} · Demo rating{" "}
+                          {product.rating.average} ·{" "}
+                          {Number(product.rating.count).toLocaleString()} reviews
+                        </p>
+                        <button
+                          type="button"
+                          disabled={selectedVariant.stock < 1}
+                          onClick={() =>
+                            void handleAgentSearch(null, productPrompt)
+                          }
+                          className="mt-2 inline-flex min-h-10 w-full items-center justify-center rounded-full border border-[#073e32] px-2 text-[10px] font-bold text-[#073e32] transition hover:bg-[#073e32] hover:text-white disabled:cursor-not-allowed disabled:border-[#d5dddd] disabled:text-[#7b8688]"
+                        >
+                          {selectedVariant.stock > 0
+                            ? "Ask agent about this"
+                            : "Out of stock"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {catalogVisible < filteredCatalog.length && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCatalogVisible((visible) => visible + 8)
+                  }
+                  className="mx-auto mt-6 block min-h-11 rounded-full border border-[#111416] px-6 py-2 text-xs font-semibold text-[#111416] transition hover:bg-[#111416] hover:text-white"
+                >
+                  Load more
+                </button>
+              )}
+            </section>
           </section>
 
           {/* Core Product Stage (Desktop + Mobile Cohesive Layout) */}
@@ -918,7 +1136,8 @@ function HomeContent() {
                   <div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                        {activeItem.category || "Athletic Gear"} · SKU{" "}
+                        {activeItem.category || "Athletic Gear"} ·{" "}
+                        {activeItem.color} · size {activeItem.size} · SKU{" "}
                         {activeItem.sku}
                       </span>
                       <div className="flex items-center gap-1 text-xs text-stone-300">
@@ -980,7 +1199,7 @@ function HomeContent() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                      Available Catalog Picks ({items.length})
+                      Available Catalog Picks ({catalogPicks.length})
                     </span>
                     <span className="text-[11px] text-stone-500">
                       Tap to inspect
@@ -988,11 +1207,11 @@ function HomeContent() {
                   </div>
 
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                    {items.map((item) => {
-                      const isSelected = item.id === activeItem.id;
+                    {catalogPicks.map((item) => {
+                      const isSelected = item.sku === activeItem.sku;
                       return (
                         <button
-                          key={item.id}
+                          key={item.sku}
                           type="button"
                           onClick={() => {
                             setActiveItem(item);
@@ -1063,18 +1282,21 @@ function HomeContent() {
                           </span>
                         </div>
                         <div className="flex justify-between text-stone-400">
-                          <span>Settlement Currency</span>
+                          <span>Catalog price currency</span>
                           <span className="font-mono font-bold text-amber-200">
-                            {selectedCurrency}
+                            {activeItem.currency}
                           </span>
                         </div>
                         <div className="pt-2 border-t border-white/10 flex justify-between items-baseline text-sm font-bold">
-                          <span className="text-white">Total Charge</span>
+                          <span className="text-white">PayPal charge</span>
                           <span className="text-xl font-extrabold text-amber-300">
-                            {formatPrice(activeItem.price, selectedCurrency)}{" "}
-                            {selectedCurrency}
+                            {formatPrice(activeItem.price, activeItem.currency)}{" "}
+                            {activeItem.currency}
                           </span>
                         </div>
+                        <p className="text-right text-[10px] text-stone-500">
+                          Display estimate: {formatPrice(activeItem.price, selectedCurrency)} {selectedCurrency}
+                        </p>
                       </div>
 
                       {/* PayPal Button Container */}
@@ -1269,12 +1491,15 @@ function HomeContent() {
               </div>
 
               <div className="mb-4 rounded-xl border border-white/10 bg-black/40 p-3 text-xs flex justify-between items-center">
-                <span className="text-stone-300">Total Settlement:</span>
+                <span className="text-stone-300">PayPal charge:</span>
                 <span className="text-base font-bold text-amber-300">
-                  {formatPrice(activeItem.price, selectedCurrency)}{" "}
-                  {selectedCurrency}
+                  {formatPrice(activeItem.price, activeItem.currency)}{" "}
+                  {activeItem.currency}
                 </span>
               </div>
+              <p className="mb-4 text-center text-[10px] text-stone-500">
+                Display estimate: {formatPrice(activeItem.price, selectedCurrency)} {selectedCurrency}
+              </p>
 
               {checkoutError && (
                 <p
@@ -1377,17 +1602,16 @@ function HomeContent() {
               {/* Quick Suggestion Chips (Smooth Scrollable Row) */}
               <div className="flex gap-1.5 overflow-x-auto border-t border-white/10 px-4 py-2.5 scrollbar-none bg-black/20">
                 {[
-                  "Switch to EUR (€)",
-                  "Switch to GBP (£)",
-                  "Compare store quotes",
-                  "Cheapest under 70",
-                  "Show noise-canceling audio",
-                  "Check delivery terms",
+                  DEFAULT_SEARCH_QUERY,
+                  "Blue running shoes, size 11",
+                  "Black running shoes under $80, size 10",
+                  "Casual shoes under $60",
                 ].map((chip, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleSendCopilotMessage(chip)}
+                    disabled={isChatSending}
                     className="shrink-0 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1 text-[11px] font-medium text-stone-300 hover:text-white transition whitespace-nowrap"
                   >
                     {chip}
@@ -1406,9 +1630,11 @@ function HomeContent() {
                       e.key === "Enter" && handleSendCopilotMessage()
                     }
                     placeholder={
-                      isListening
+                      isChatSending
+                        ? "Searching catalog variants…"
+                        : isListening
                         ? "Listening… speak now"
-                        : "Ask shopping agent or switch currency…"
+                        : "Ask about color, size, price, or stock…"
                     }
                     className="min-w-0 flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-stone-200 placeholder-stone-500 outline-none"
                   />
@@ -1431,7 +1657,8 @@ function HomeContent() {
                   <button
                     type="button"
                     onClick={() => handleSendCopilotMessage()}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 font-bold transition hover:brightness-105"
+                    disabled={isChatSending || !chatInput.trim()}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 font-bold transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Send message"
                   >
                     <Send className="h-3.5 w-3.5" />

@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { capturePayPalOrder, getPayPalOrder } from "@/lib/paypal";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalogVariantBySku } from "@/lib/catalog";
+import { getVariantLabel } from "@/lib/catalog-shapes";
+import {
+  formatMinorUnitAmount,
+  multiplyCurrencyAmount,
+  SUPPORTED_CURRENCIES,
+} from "@/lib/fx";
+import { getCompletedPayPalCapture } from "@/lib/paypal-capture-validation";
+import {
+  isCustomerDatabaseConfigured,
+  saveCustomerPurchase,
+} from "@/lib/customer-db";
+import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
 
 async function getPurchaseHistoryStatus(orderId, capture, product, currency) {
   if (!isCustomerDatabaseConfigured()) {
@@ -37,13 +49,6 @@ async function getPurchaseHistoryStatus(orderId, capture, product, currency) {
     };
   }
 }
-import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
-import { getCompletedPayPalCapture } from "@/lib/paypal-capture-validation";
-import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
-import {
-  isCustomerDatabaseConfigured,
-  saveCustomerPurchase,
-} from "@/lib/customer-db";
 
 export async function POST(req) {
   const rateLimit = checkRateLimit(
@@ -75,33 +80,58 @@ export async function POST(req) {
     }
 
     const purchaseUnit = order.purchase_units[0];
-    const productId = purchaseUnit.custom_id?.startsWith("swiftcart:")
-      ? purchaseUnit.custom_id.slice("swiftcart:".length)
-      : null;
-    const product =
-      productId && getCatalog().find((item) => item.id === productId);
+    const customId = purchaseUnit.custom_id || "";
+    const [namespace, productId, ...skuParts] = customId.split(":");
+    const sku = namespace === "swiftcart" ? skuParts.join(":") : "";
+    const product = sku ? getCatalogVariantBySku(sku) : null;
     const currency = purchaseUnit.amount?.currency_code;
-    if (!product || !product.inStock || !SUPPORTED_CURRENCIES[currency]) {
+    if (
+      !product ||
+      product.id !== productId ||
+      !SUPPORTED_CURRENCIES[currency] ||
+      product.currency !== currency
+    ) {
       return NextResponse.json(
-        { error: "Order does not match an available SwiftCart product." },
+        { error: "Order does not match a SwiftCart catalog variant." },
         { status: 400 },
       );
     }
 
+    const lineItem =
+      purchaseUnit.items?.length === 1 ? purchaseUnit.items[0] : null;
+    const quantity = Number(lineItem?.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+      return NextResponse.json(
+        { error: "Order quantity failed validation." },
+        { status: 400 },
+      );
+    }
+    if (order.status === "APPROVED" && product.stock < quantity) {
+      return NextResponse.json(
+        { error: "This variant no longer has enough stock to capture." },
+        { status: 409 },
+      );
+    }
+
     const decimals = SUPPORTED_CURRENCIES[currency].decimals;
-    const expectedAmount = convertAmount(product.price, currency).toFixed(
+    const expectedUnitAmount = formatMinorUnitAmount(
+      product.priceMinor,
+      currency,
+    );
+    const expectedAmount = multiplyCurrencyAmount(
+      expectedUnitAmount,
+      quantity,
       decimals,
     );
     const orderAmount = purchaseUnit.amount?.value;
-    const lineItem =
-      purchaseUnit.items?.length === 1 ? purchaseUnit.items[0] : null;
     if (
       orderAmount !== expectedAmount ||
       !lineItem ||
       lineItem.sku !== product.sku ||
-      lineItem.name !== product.name ||
-      lineItem.unit_amount?.value !== expectedAmount ||
-      lineItem.quantity !== "1"
+      lineItem.name !==
+        getVariantLabel(product.name, product.color, product.size) ||
+      lineItem.unit_amount?.value !== expectedUnitAmount ||
+      lineItem.quantity !== String(quantity)
     ) {
       return NextResponse.json(
         { error: "Order amount or items failed validation." },

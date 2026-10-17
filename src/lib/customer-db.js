@@ -184,7 +184,7 @@ export async function saveCustomerPurchase({
       randomUUID(),
       orderId,
       captureId,
-      product.id,
+      product.sku,
       product.name,
       product.sku,
       amount,

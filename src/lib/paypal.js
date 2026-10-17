@@ -76,6 +76,8 @@ export async function getPayPalAccessToken() {
 export async function createPayPalOrder({
   name = "SwiftCart Product",
   price = "49.99",
+  totalPrice = price,
+  quantity = 1,
   currency = "USD",
   sku = "SKU-001",
   customId,
@@ -93,11 +95,11 @@ export async function createPayPalOrder({
         description: `Order via SwiftCart Agentic Checkout: ${name}`,
         amount: {
           currency_code: currency,
-          value: price,
+          value: totalPrice,
           breakdown: {
             item_total: {
               currency_code: currency,
-              value: price,
+              value: totalPrice,
             },
           },
         },
@@ -108,7 +110,7 @@ export async function createPayPalOrder({
               currency_code: currency,
               value: price,
             },
-            quantity: "1",
+            quantity: String(quantity),
             sku: sku,
             category: "PHYSICAL_GOODS",
           },

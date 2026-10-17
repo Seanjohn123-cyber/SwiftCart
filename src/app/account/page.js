@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -25,12 +25,11 @@ function formatPurchaseAmount(purchase) {
 }
 
 function CustomerAccountContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "login" ? "login" : "register";
   const [customer, setCustomer] = useState(null);
   const [purchases, setPurchases] = useState([]);
-  const [mode, setMode] = useState(() =>
-    searchParams.get("mode") === "login" ? "login" : "register",
-  );
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,6 +82,14 @@ function CustomerAccountContent() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!customer || window.location.hash !== "#purchases") return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("purchases")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [customer]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
@@ -132,7 +139,7 @@ function CustomerAccountContent() {
   return (
     <div className="min-h-screen bg-[#c3d0d1] px-2 py-2 text-[#111416] antialiased sm:px-4 sm:py-4">
       <AppHeader />
-      <main className="mx-auto flex min-h-[calc(100vh-250px)] w-full max-w-[1320px] flex-1 items-center rounded-b-[24px] bg-[#eef3f3] px-2 py-2">
+      <main className="mx-auto flex min-h-[calc(100vh-250px)] w-full max-w-[1320px] flex-1 items-center rounded-b-[24px] bg-[#eef3f3] px-2 pb-28 pt-2 sm:py-2">
         <div className="mx-auto grid w-full max-w-[1120px] gap-4 md:grid-cols-2">
           <section className="flex min-h-[480px] flex-col overflow-hidden rounded-[24px] bg-[#101315] p-7 text-white sm:p-8 lg:p-9">
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-lime-300">
@@ -225,7 +232,10 @@ function CustomerAccountContent() {
                   </button>
                 </div>
 
-                <div className="mt-7 flex items-center gap-2 border-b border-[#e6ebec] pb-3">
+                <div
+                  id="purchases"
+                  className="mt-7 flex items-center gap-2 border-b border-[#e6ebec] pb-3"
+                >
                   <PackageCheck className="h-5 w-5 text-emerald-800" />
                   <h3 className="text-base font-extrabold text-[#111416]">
                     Purchase history
@@ -366,7 +376,10 @@ function CustomerAccountContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      setMode(isRegistering ? "login" : "register");
+                      router.replace(
+                        `/account?mode=${isRegistering ? "login" : "register"}`,
+                        { scroll: false },
+                      );
                       setError("");
                       setMessage("");
                     }}

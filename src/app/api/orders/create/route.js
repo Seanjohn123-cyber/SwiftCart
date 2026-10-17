@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createPayPalOrder } from "@/lib/paypal";
-import { getCatalog } from "@/lib/catalog";
-import { convertAmount, SUPPORTED_CURRENCIES } from "@/lib/fx";
+import { getCatalogVariantBySku } from "@/lib/catalog";
+import {
+  formatMinorUnitAmount,
+  multiplyCurrencyAmount,
+  SUPPORTED_CURRENCIES,
+} from "@/lib/fx";
+import { getVariantLabel } from "@/lib/catalog-shapes";
 import { checkRateLimit, getRequestClientKey, rateLimitResponse } from "@/lib/rate-limit";
 import { getCustomerSessionSubjectFromRequest } from "@/lib/customer-auth";
 import {
@@ -19,27 +24,31 @@ export async function POST(req) {
 
   try {
     const body = await req.json().catch(() => null);
-    const productId = body?.productId;
-    const currency = body?.currency || "USD";
+    const sku = body?.sku;
+    const quantity = body?.qty;
     const requestId = req.headers.get("idempotency-key");
     if (
-      typeof productId !== "string" ||
-      !SUPPORTED_CURRENCIES[currency] ||
+      typeof sku !== "string" ||
+      !/^[A-Za-z0-9._:-]{1,80}$/.test(sku) ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 10 ||
       !requestId ||
       !/^[0-9a-f-]{36}$/i.test(requestId)
     ) {
       return NextResponse.json(
-        { error: "A valid product, currency, and idempotency key are required." },
+        { error: "A valid product, quantity, and idempotency key are required." },
         { status: 400 },
       );
     }
 
-    const product = getCatalog().find((item) => item.id === productId);
+    const product = getCatalogVariantBySku(sku);
     if (
       !product ||
-      !product.inStock ||
-      !Number.isFinite(Number(product.price)) ||
-      Number(product.price) <= 0
+      product.stock < quantity ||
+      !Number.isInteger(product.priceMinor) ||
+      product.priceMinor <= 0 ||
+      !SUPPORTED_CURRENCIES[product.currency]
     ) {
       return NextResponse.json(
         { error: "Product is unavailable for checkout." },
@@ -47,8 +56,10 @@ export async function POST(req) {
       );
     }
 
+    const currency = product.currency;
     const decimals = SUPPORTED_CURRENCIES[currency].decimals;
-    const price = convertAmount(product.price, currency).toFixed(decimals);
+    const price = formatMinorUnitAmount(product.priceMinor, currency);
+    const totalPrice = multiplyCurrencyAmount(price, quantity, decimals);
     const customerId = getCustomerSessionSubjectFromRequest(req);
     if (customerId) {
       if (!isCustomerDatabaseConfigured()) {
@@ -60,7 +71,7 @@ export async function POST(req) {
       const reserved = await reserveCustomerCheckoutIntent({
         idempotencyKey: requestId,
         customerId,
-        productId: product.id,
+        productId: product.sku,
       });
       if (!reserved) {
         return NextResponse.json(
@@ -71,11 +82,13 @@ export async function POST(req) {
     }
 
     const order = await createPayPalOrder({
-      name: product.name,
+      name: getVariantLabel(product.name, product.color, product.size),
       price,
+      totalPrice,
+      quantity,
       currency,
       sku: product.sku,
-      customId: `swiftcart:${product.id}`,
+      customId: `swiftcart:${product.id}:${product.sku}`,
       requestId,
     });
 
@@ -84,7 +97,7 @@ export async function POST(req) {
       !(await linkCustomerCheckoutOrder({
         idempotencyKey: requestId,
         customerId,
-        productId: product.id,
+        productId: product.sku,
         orderId: order.id,
       }))
     ) {
@@ -101,9 +114,12 @@ export async function POST(req) {
     return NextResponse.json({
       id: order.id,
       status: order.status,
-      productId,
+      productId: product.id,
+      sku: product.sku,
+      quantity,
       currency,
       price,
+      totalPrice,
     });
   } catch (error) {
     console.error("Error creating PayPal order:", error);

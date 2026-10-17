@@ -73,6 +73,53 @@ export function convertAmount(amountInUSD, targetCurrency = 'USD') {
     : parseFloat(converted.toFixed(curr.decimals));
 }
 
+export function multiplyCurrencyAmount(amount, quantity, decimals) {
+  if (
+    typeof amount !== 'string' ||
+    !/^\d+(?:\.\d+)?$/.test(amount) ||
+    !Number.isInteger(quantity) ||
+    quantity < 1 ||
+    !Number.isInteger(decimals) ||
+    decimals < 0 ||
+    decimals > 3
+  ) {
+    throw new Error("Invalid currency amount or quantity.");
+  }
+
+  const [whole, fractional = ""] = amount.split(".");
+  const scale = 10n ** BigInt(decimals);
+  const unitAmount =
+    BigInt(whole) * scale +
+    BigInt((fractional + "0".repeat(decimals)).slice(0, decimals) || "0");
+  const total = unitAmount * BigInt(quantity);
+  const totalWhole = total / scale;
+  if (decimals === 0) return totalWhole.toString();
+
+  const totalFraction = (total % scale).toString().padStart(decimals, "0");
+  return `${totalWhole}.${totalFraction}`;
+}
+
+export function formatMinorUnitAmount(amountMinor, currency) {
+  const definition = SUPPORTED_CURRENCIES[currency];
+  if (
+    !Number.isSafeInteger(amountMinor) ||
+    amountMinor < 0 ||
+    !definition
+  ) {
+    throw new Error("Invalid minor-unit amount or currency.");
+  }
+
+  if (definition.decimals === 0) return String(amountMinor);
+
+  const scale = 10 ** definition.decimals;
+  const whole = Math.floor(amountMinor / scale);
+  const fraction = String(amountMinor % scale).padStart(
+    definition.decimals,
+    "0",
+  );
+  return `${whole}.${fraction}`;
+}
+
 /**
  * Format an amount with its currency symbol
  * @param {number|string} amountInUSD 
