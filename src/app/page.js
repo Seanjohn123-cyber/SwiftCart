@@ -570,7 +570,7 @@ function HomeContent() {
         />
 
         {/* Main Content Area */}
-        <main className="relative z-10 mx-auto w-full max-w-[1320px] rounded-b-[24px] bg-[#eef3f3] px-4 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
+        <main className="relative z-10 mx-auto w-full max-w-[1320px] rounded-b-[24px] bg-[#eef3f3] px-3 py-3 sm:px-7 sm:py-5 md:px-6 lg:px-10">
           {registeredStoreName && (
             <div
               role="status"
@@ -671,27 +671,30 @@ function HomeContent() {
             className="mx-auto max-w-[1120px] pb-10 pt-2 sm:pt-3.5"
           >
             <div className="mx-auto max-w-[700px] text-center">
-              <h1 className="text-[38px] font-black leading-[0.94] text-[#101315] sm:text-[56px] sm:leading-[0.86]">
+              <span className="mb-3 inline-flex rounded-full border border-emerald-700/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800 sm:hidden">
+                Sandbox
+              </span>
+              <h1 className="text-[40px] font-black leading-[0.92] tracking-[-0.035em] text-[#101315] sm:text-[56px] sm:leading-[0.86] sm:tracking-normal">
                 SHOP BY
                 <br />
                 JUST ASKING.
               </h1>
-              <p className="mx-auto mt-4 max-w-[390px] text-[13px] leading-[1.35] text-[#526064] sm:text-sm">
+              <p className="mx-auto mt-4 max-w-[390px] text-[13px] leading-[1.25] text-[#526064] sm:text-sm sm:leading-[1.35]">
                 Tell the agent what you want. It finds the best matches, and you
                 approve before PayPal charges a cent.
               </p>
               <form
                 onSubmit={handleAgentSearch}
-                className="mx-auto mt-1 flex max-w-[580px] flex-col gap-2 rounded-[28px] bg-white p-1 shadow-[0_12px_32px_rgba(39,57,59,0.14)] sm:flex-row sm:items-center sm:rounded-full sm:pl-5"
+                className="mx-auto mt-5 flex max-w-[580px] flex-col gap-2 sm:mt-1 sm:flex-row sm:items-center sm:rounded-full sm:bg-white sm:p-1 sm:pl-5 sm:shadow-[0_12px_32px_rgba(39,57,59,0.14)]"
               >
-                <div className="flex min-w-0 flex-1 items-center">
+                <div className="flex min-h-11 min-w-0 flex-1 items-center rounded-full bg-white px-3 shadow-[0_4px_14px_rgba(39,57,59,0.08)] sm:min-h-0 sm:bg-transparent sm:px-0 sm:shadow-none">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     aria-label="Describe what you want to shop for"
                     placeholder="Best value running shoes under $80, size 10"
-                    className="min-w-0 flex-1 rounded-full bg-transparent px-3 py-2 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
+                    className="min-w-0 flex-1 rounded-full bg-transparent px-2 py-2 text-left text-[13px] text-[#15191a] outline-none placeholder:text-[#687477] sm:px-0"
                   />
                   {searchQuery && (
                     <button
@@ -707,7 +710,7 @@ function HomeContent() {
                 <button
                   type="submit"
                   disabled={!searchQuery.trim() || isSearching}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-2 rounded-full bg-[#111416] px-6 text-[12px] font-extrabold uppercase text-white transition hover:bg-[#293033] disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex min-h-[54px] w-full shrink-0 items-center justify-center gap-2 rounded-full bg-[#111416] px-6 text-[12px] font-extrabold uppercase text-white transition hover:bg-[#293033] disabled:cursor-wait disabled:opacity-60 sm:min-h-8 sm:w-auto"
                 >
                   <Search className="h-4 w-4" />
                   {isSearching ? "Searching" : "Find with agent"}
@@ -783,7 +786,7 @@ function HomeContent() {
                       </div>
                       <div className="px-0.5 pb-0.5 pt-1.5">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="min-w-0 truncate text-[12px] font-extrabold leading-tight text-[#171c1d]">
+                          <h3 className="min-w-0 truncate text-[14px] font-extrabold leading-tight text-[#171c1d] sm:text-[12px]">
                             {item.name}
                           </h3>
                           <span className="shrink-0 text-[12px] font-extrabold text-[#171c1d]">
@@ -805,7 +808,7 @@ function HomeContent() {
                         <button
                           type="button"
                           onClick={() => handleApprove(item)}
-                          className={`mt-1 inline-flex min-h-7 items-center justify-center rounded-full border px-4 text-[10px] font-bold transition ${
+                          className={`mt-2 inline-flex min-h-[42px] w-full items-center justify-center rounded-full border px-4 text-[12px] font-bold transition sm:mt-1 sm:min-h-7 sm:w-auto sm:text-[10px] ${
                             index === 0
                               ? "border-[#073e32] bg-[#073e32] text-white hover:bg-[#0b5746]"
                               : "border-[#687477] bg-white text-[#202627] hover:bg-[#eef3f3]"
