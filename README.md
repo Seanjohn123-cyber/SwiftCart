@@ -2,8 +2,6 @@
 
 **Live demo:** [swiftcart-agent-shopper.onrender.com](https://swiftcart-agent-shopper.onrender.com)<br>
 **Source:** [Seanjohn123-cyber/SwiftCart](https://github.com/Seanjohn123-cyber/SwiftCart)<br>
-**Repo demo video:** [Download the trimmed MP4](public/swiftcart-demo.mp4)<br>
-**Demo video:** _Add the public YouTube URL after recording a video under 3 minutes. Use no copyrighted music._
 
 SwiftCart helps a budget-conscious runner find an in-stock shoe in the right size and price range, compare merchant offers, review an agent-proposed purchase, and approve payment through PayPal Sandbox.
 
