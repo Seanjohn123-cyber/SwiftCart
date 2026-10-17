@@ -202,7 +202,7 @@ export default function AppHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`shrink-0 rounded-full px-2.5 py-1.5 text-[9px] font-bold uppercase transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650] ${
+                className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650] md:text-xs ${
                   active
                     ? "bg-[#111416] text-white"
                     : "text-[#4a5659] hover:bg-white/70 hover:text-[#111719]"
@@ -217,13 +217,13 @@ export default function AppHeader() {
         <div className="order-2 ml-auto flex items-center justify-end gap-2 sm:order-3">
           <Link
             href="/account?mode=login"
-            className="rounded-full px-1.5 py-2 text-[9px] font-bold uppercase text-[#263133] transition hover:text-[#075b47] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650]"
+            className="rounded-full px-3 py-1.5 text-[11px] font-bold uppercase text-[#263133] transition hover:text-[#075b47] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650] md:text-xs"
           >
             Log in
           </Link>
           <Link
             href="/account?mode=register"
-            className="rounded-full bg-[#073e32] px-3.5 py-2 text-[9px] font-bold uppercase text-white transition hover:bg-[#0b5746] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650]"
+            className="rounded-full bg-[#073e32] px-4 py-2 text-[11px] font-bold uppercase text-white transition hover:bg-[#0b5746] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087650] md:text-xs"
           >
             Sign up
           </Link>

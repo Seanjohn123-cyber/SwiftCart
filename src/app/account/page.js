@@ -139,8 +139,8 @@ function CustomerAccountContent() {
   return (
     <div className="min-h-screen bg-[#c3d0d1] px-2 py-2 text-[#111416] antialiased sm:px-4 sm:py-4">
       <AppHeader />
-      <main className="mx-auto flex min-h-[calc(100vh-250px)] w-full max-w-[1320px] flex-1 items-center rounded-b-[24px] bg-[#eef3f3] px-2 pb-28 pt-2 sm:py-2">
-        <div className="mx-auto grid w-full max-w-[1120px] gap-4 md:grid-cols-2">
+      <main className="mx-auto flex min-h-[calc(100vh-250px)] w-full max-w-[1320px] flex-1 items-center rounded-b-[24px] bg-[#eef3f3] px-3 pb-28 pt-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8">
+        <div className="mx-auto grid w-full max-w-[1120px] gap-6 lg:grid-cols-2 lg:gap-8">
           <section className="flex min-h-[480px] flex-col overflow-hidden rounded-[24px] bg-[#101315] p-7 text-white sm:p-8 lg:p-9">
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-lime-300">
               Join SwiftCart

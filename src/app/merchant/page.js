@@ -353,19 +353,19 @@ function MerchantPortalContent() {
 
   return (
     <div className="flex w-full flex-col gap-6 md:gap-8">
-      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-[#d8e1e2] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-stone-300 transition"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#cbd6d8] bg-white hover:bg-[#e9f0f0] px-4 py-2 text-xs font-semibold text-[#273133] transition"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Studio</span>
+            <span>Back to Shop</span>
           </Link>
           <button
             onClick={fetchCatalogStatus}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-stone-200 transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full border border-[#cbd6d8] bg-white hover:bg-[#e9f0f0] px-4 py-2 text-xs font-semibold text-[#273133] transition disabled:opacity-50"
           >
             <RefreshCw
               className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
@@ -374,7 +374,7 @@ function MerchantPortalContent() {
           </button>
           <Link
             href="/connections"
-            className="inline-flex items-center rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-amber-300 transition"
+            className="inline-flex items-center rounded-full border border-[#cbd6d8] bg-white hover:bg-[#e9f0f0] px-4 py-2 text-xs font-semibold text-emerald-800 transition"
           >
             API Status
           </Link>
@@ -385,62 +385,17 @@ function MerchantPortalContent() {
         <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">
           Inventory
         </span>
-        <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-black uppercase text-[#111416] tracking-tight">
           What you have.
         </h1>
-        <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-stone-400">
+        <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-[#536064]">
           Track every listing in the catalog. Products marked unavailable are
           excluded from agent results.
         </p>
       </div>
 
-      {/* Live Network Metrics Banner */}
-      <div className="hidden grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-3xl border border-white/10 bg-[#1f1a16]/95 p-6 backdrop-blur-xl shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-stone-400 text-xs block font-medium">
-              Live Ingested Goods:
-            </span>
-            <span className="text-3xl font-extrabold text-white mt-1 block">
-              {catalogCount} Items
-            </span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center">
-            <Package className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-[#1f1a16]/95 p-6 backdrop-blur-xl shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-stone-400 text-xs block font-medium">
-              Store Status:
-            </span>
-            <span className="text-3xl font-extrabold text-emerald-400 mt-1 block">
-              {storeProfile.isRegistered ? "Connected" : "Pending"}
-            </span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-            <Store className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-[#1f1a16]/95 p-6 backdrop-blur-xl shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-stone-400 text-xs block font-medium">
-              Payout Settlement:
-            </span>
-            <span className="text-3xl font-extrabold text-amber-300 mt-1 block">
-              PayPal Sandbox
-            </span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
       {/* Step Navigation Bar */}
-      <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-2 overflow-x-auto border-b border-[#d8e1e2] pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
           { id: "inventory", label: "Inventory" },
           { id: "excel", label: "1. Excel & CSV Ingestion" },
@@ -450,10 +405,10 @@ function MerchantPortalContent() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap text-xs font-semibold px-4 py-2 rounded-full transition ${
+            className={`whitespace-nowrap text-xs font-bold px-4 py-2 rounded-full transition ${
               activeTab === tab.id
-                ? "bg-amber-400/20 text-amber-200 border border-amber-400/40 shadow-[0_0_15px_rgba(251,191,36,0.15)]"
-                : "text-stone-400 hover:text-white hover:bg-white/5"
+                ? "bg-[#073e32] text-white border border-[#073e32]"
+                : "bg-white text-[#4a5659] border border-[#cbd6d8] hover:bg-[#e9f0f0]"
             }`}
           >
             {tab.label}
@@ -462,17 +417,17 @@ function MerchantPortalContent() {
       </div>
 
       {(activeTab === "excel" || activeTab === "presets") && (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
+        <div className="rounded-[18px] border border-[#dce6e5] bg-white p-5 shadow-sm">
           {merchantSessionActive ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-semibold text-emerald-200">
+              <p className="text-xs font-semibold text-emerald-800">
                 Merchant session active. The session token is stored in an
                 HttpOnly cookie.
               </p>
               <button
                 type="button"
                 onClick={handleMerchantLogout}
-                className="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-stone-200"
+                className="rounded-full border border-[#cbd6d8] bg-white hover:bg-[#e9f0f0] px-3.5 py-1.5 text-xs font-semibold text-[#273133]"
               >
                 Sign out
               </button>
@@ -481,7 +436,7 @@ function MerchantPortalContent() {
             <form onSubmit={handleMerchantLogin}>
               <label
                 htmlFor="merchant-login-token"
-                className="block text-xs font-bold text-amber-100"
+                className="block text-xs font-bold text-[#111416]"
               >
                 Merchant sign-in
               </label>
@@ -493,24 +448,24 @@ function MerchantPortalContent() {
                   value={merchantToken}
                   onChange={(event) => setMerchantToken(event.target.value)}
                   placeholder="Enter merchant credentials"
-                  className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-300 sm:max-w-xl"
+                  className="w-full rounded-xl border border-[#cbd6d8] bg-white px-4 py-2.5 text-sm text-[#111416] outline-none focus:border-emerald-700 sm:max-w-xl"
                 />
                 <button
                   type="submit"
                   disabled={merchantAuthBusy || !merchantToken.trim()}
-                  className="rounded-xl bg-amber-300 px-4 py-2.5 text-xs font-bold text-black disabled:opacity-50"
+                  className="rounded-xl bg-[#073e32] hover:bg-[#0b5746] px-5 py-2.5 text-xs font-bold text-white transition disabled:opacity-50"
                 >
                   {merchantAuthBusy ? "Signing in…" : "Sign in"}
                 </button>
               </div>
-              <p className="mt-2 text-[11px] text-stone-400">
+              <p className="mt-2 text-[11px] text-[#657276]">
                 The credential is exchanged with this server and then cleared
                 from the form. It is never stored in browser storage.
               </p>
             </form>
           )}
           {merchantAuthMessage && (
-            <p className="mt-2 text-xs text-stone-200" role="status">
+            <p className="mt-2 text-xs text-[#273133]" role="status">
               {merchantAuthMessage}
             </p>
           )}
